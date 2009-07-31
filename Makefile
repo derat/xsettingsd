@@ -1,4 +1,4 @@
-xsettingsd:
+xsettingsd: xsettingsd.cc
 	g++ -o xsettingsd xsettingsd.cc
 
 clean:
