@@ -37,6 +37,7 @@ class DataWriter {
 class SettingsManager {
  public:
   SettingsManager();
+  ~SettingsManager();
 
   bool UpdateProperty();
 

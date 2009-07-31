@@ -28,6 +28,7 @@ bool DataWriter::WriteInt8(int8 num) {
     return false;
 
   *(reinterpret_cast<int8*>(buffer_ + bytes_written_)) = num;
+  bytes_written_ += sizeof(int8);
   return true;
 }
 
@@ -36,6 +37,7 @@ bool DataWriter::WriteInt16(int16 num) {
     return false;
 
   *(reinterpret_cast<int16*>(buffer_ + bytes_written_)) = num;
+  bytes_written_ += sizeof(int16);
   return true;
 }
 
@@ -44,6 +46,7 @@ bool DataWriter::WriteInt32(int32 num) {
     return false;
 
   *(reinterpret_cast<int32*>(buffer_ + bytes_written_)) = num;
+  bytes_written_ += sizeof(int32);
   return true;
 }
 
@@ -59,7 +62,19 @@ bool DataWriter::WriteZeros(size_t bytes_to_write) {
 
 
 SettingsManager::SettingsManager()
-    : serial_(0) {
+    : serial_(5) {
+  // FIXME: Just for testing.
+  settings_.insert(make_pair("int", new IntegerSetting("int", 5)));
+  settings_.insert(make_pair("str", new StringSetting("str", "value")));
+  settings_.insert(make_pair("col", new ColorSetting("col", 1, 2, 3, 4)));
+}
+
+SettingsManager::~SettingsManager() {
+  for (map<string, Setting*>::iterator it = settings_.begin();
+       it != settings_.end(); ++it) {
+    delete it->second;
+  }
+  settings_.clear();
 }
 
 bool SettingsManager::UpdateProperty() {
@@ -68,7 +83,7 @@ bool SettingsManager::UpdateProperty() {
   DataWriter writer(buffer, sizeof(buffer));
 
   // FIXME: First field is supposed to be byte-order.
-  if (!writer.WriteInt8(0))                 return false;
+  if (!writer.WriteInt8(1))                 return false;
   if (!writer.WriteZeros(3))                return false;
   if (!writer.WriteInt32(serial_))          return false;
   if (!writer.WriteInt32(settings_.size())) return false;
@@ -79,6 +94,7 @@ bool SettingsManager::UpdateProperty() {
       return false;
   }
 
+  fwrite(buffer, 1, writer.bytes_written(), stderr);
   return true;
 }
 
@@ -118,5 +134,7 @@ bool SettingsManager::ColorSetting::WriteBody(DataWriter* writer) const {
 
 
 int main(int argc, char** argv) {
+  SettingsManager manager;
+  manager.UpdateProperty();
   return 0;
 }
