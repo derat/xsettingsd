@@ -198,6 +198,17 @@ TEST_F(ConfigParserTest, ReadSettingName) {
   EXPECT_FALSE(GetReadSettingNameResult("trailing_slash/"));
   EXPECT_FALSE(GetReadSettingNameResult("double//slash"));
   EXPECT_FALSE(GetReadSettingNameResult("digit_after_slash/0"));
+
+  // For good measure, test the examples of legitimate and illegitimate
+  // names from the spec.
+  EXPECT_EQ("GTK/colors/background0",
+            GetReadSettingNameData("GTK/colors/background0"));
+  EXPECT_EQ("_background", GetReadSettingNameData("_background"));
+  EXPECT_EQ("_111",        GetReadSettingNameData("_111"));
+  EXPECT_FALSE(GetReadSettingNameResult("/"));
+  EXPECT_FALSE(GetReadSettingNameResult("_background/"));
+  EXPECT_FALSE(GetReadSettingNameResult("GTK//colors"));
+  EXPECT_FALSE(GetReadSettingNameResult(""));
 }
 
 TEST_F(ConfigParserTest, ReadInteger) {

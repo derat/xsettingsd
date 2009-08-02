@@ -161,8 +161,7 @@ bool ConfigParser::ReadSettingName(string* name_out) {
 
     name_out->push_back(ch);
 
-    if (ch == '/')
-      prev_was_slash = true;
+    prev_was_slash = (ch == '/');
   }
 
   if (name_out->empty()) {
