@@ -130,7 +130,7 @@ bool ConfigParser::ReadSettingName(string* name_out) {
       break;
 
     char ch = stream_->GetChar();
-    if (isspace(ch)) {
+    if (isspace(ch) || ch == '#') {
       stream_->UngetChar(ch);
       break;
     }
@@ -188,7 +188,7 @@ bool ConfigParser::ReadInteger(int32* int_out) {
       break;
 
     char ch = stream_->GetChar();
-    if (isspace(ch)) {
+    if (isspace(ch) || ch == '#') {
       stream_->UngetChar(ch);
       break;
     }

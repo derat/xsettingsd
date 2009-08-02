@@ -193,6 +193,7 @@ TEST_F(ConfigParserTest, ReadSettingName) {
   EXPECT_EQ("First/Second",   GetReadSettingNameData("First/Second"));
   EXPECT_EQ("Has_Underscore", GetReadSettingNameData("Has_Underscore"));
   EXPECT_EQ("trailing_space", GetReadSettingNameData("trailing_space  "));
+  EXPECT_EQ("blah",           GetReadSettingNameData("blah#comment"));
   EXPECT_FALSE(GetReadSettingNameResult(" leading_space"));
   EXPECT_FALSE(GetReadSettingNameResult("/leading_slash"));
   EXPECT_FALSE(GetReadSettingNameResult("trailing_slash/"));
@@ -215,6 +216,7 @@ TEST_F(ConfigParserTest, ReadInteger) {
   EXPECT_EQ(0,           GetReadIntegerData("0"));
   EXPECT_EQ(10,          GetReadIntegerData("10"));
   EXPECT_EQ(12,          GetReadIntegerData("0012"));
+  EXPECT_EQ(15,          GetReadIntegerData("15#2 comment"));
   EXPECT_EQ(20,          GetReadIntegerData("20   "));
   EXPECT_EQ(2147483647,  GetReadIntegerData("2147483647"));
   EXPECT_EQ(-5,          GetReadIntegerData("-5"));
