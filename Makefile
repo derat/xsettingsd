@@ -1,7 +1,7 @@
 CC=g++
 
-xsettingsd: xsettingsd.cc settings_manager.h config_parser.o data_writer.o \
-            setting.o settings_manager.o
+xsettingsd: xsettingsd.cc config_parser.h settings_manager.h \
+            config_parser.o data_writer.o \ setting.o settings_manager.o
 	$(CC) -o xsettingsd xsettingsd.cc config_parser.o data_writer.o \
 	  setting.o settings_manager.o
 

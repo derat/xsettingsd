@@ -9,16 +9,83 @@ namespace xsettingsd {
 
 class ConfigParser {
  public:
-  ConfigParser(const std::string& filename);
+  class CharStream;
+
+  // The parser takes ownership of 'stream' and calls its Init() method.
+  ConfigParser(CharStream* stream);
   ~ConfigParser();
 
-  bool OpenFile();
+  // Abstract base class for reading a stream of characters.
+  class CharStream {
+   public:
+    CharStream()
+        : have_buffered_char_(false),
+          buffered_char_(0) {
+    }
+    virtual ~CharStream() {}
+
+    // Must be called before using the stream.
+    // The stream is unusable if false is returned.
+    bool Init();
+
+    // Are we currently at the end of the stream?
+    bool AtEOF() const;
+
+    // Get the next character in the stream.
+    char GetChar();
+
+    // Push a previously-read character back onto the stream.
+    // At most one character can be buffered.
+    void UngetChar(char ch);
+
+   private:
+    virtual bool InitImpl() { return true; }
+    virtual bool AtEOFImpl() const = 0;
+    virtual char GetCharImpl() = 0;
+
+    // Has Init() been called?
+    bool initialized_;
+
+    // Has a character been returned with UngetChar() but not yet re-read?
+    bool have_buffered_char_;
+
+    // The character returned by UngetChar().
+    char buffered_char_;
+  };
+
+  // An implementation of CharStream that reads from a file.
+  class FileCharStream : public CharStream {
+   public:
+    FileCharStream(const std::string& filename);
+    ~FileCharStream();
+
+   private:
+    bool InitImpl();
+    bool AtEOFImpl() const;
+    char GetCharImpl();
+
+    std::string filename_;
+    FILE* file_;
+  };
+
+  // An implementation of CharStream that reads from an in-memory string.
+  class StringCharStream : public CharStream {
+   public:
+    StringCharStream(const std::string& data);
+
+   private:
+    bool AtEOFImpl() const;
+    char GetCharImpl();
+
+    std::string data_;
+    size_t pos_;
+  };
+
+  bool Parse();
 
  private:
-  bool AtEOF() const;
-  char GetChar();
-  void UngetChar(char ch);
-
+  // Read a setting name starting at the current position in the file.
+  // Returns false if the setting name is invalid.
   bool ReadSettingName(std::string* name_out);
 
   // Read an integer starting at the current position in the file.
@@ -31,13 +98,8 @@ class ConfigParser {
   bool ReadColor(uint16* red_out, uint16* blue_out,
                  uint16* green_out, uint16* alpha_out);
 
-  std::string filename_;
 
-  FILE* file_;
-
-  bool have_buffered_char_;
-
-  char buffered_char_;
+  CharStream* stream_;
 };
 
 }  // namespace

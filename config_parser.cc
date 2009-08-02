@@ -8,19 +8,54 @@ using std::string;
 
 namespace xsettingsd {
 
-ConfigParser::ConfigParser(const string& filename)
-    : filename_(filename),
-      file_(NULL),
-      have_buffered_char_(false),
-      buffered_char_(0) {
+ConfigParser::ConfigParser(CharStream* stream)
+    : stream_(stream) {
+  assert(stream_);
 }
 
 ConfigParser::~ConfigParser() {
-  if (file_)
-    fclose(file_);
+  delete stream_;
 }
 
-bool ConfigParser::OpenFile() {
+bool ConfigParser::CharStream::Init() {
+  assert(!initialized_);
+  return InitImpl();
+}
+
+bool ConfigParser::CharStream::AtEOF() const {
+  assert(initialized_);
+  return (!have_buffered_char_ && AtEOFImpl());
+}
+
+char ConfigParser::CharStream::GetChar() {
+  assert(initialized_);
+  if (have_buffered_char_) {
+    have_buffered_char_ = false;
+    return buffered_char_;
+  }
+  return GetCharImpl();
+}
+
+void ConfigParser::CharStream::UngetChar(char ch) {
+  assert(initialized_);
+  assert(!have_buffered_char_);
+  buffered_char_ = ch;
+  have_buffered_char_ = true;
+}
+
+ConfigParser::FileCharStream::FileCharStream(const string& filename)
+    : filename_(filename),
+      file_(NULL) {
+}
+
+ConfigParser::FileCharStream::~FileCharStream() {
+  if (file_) {
+    fclose(file_);
+    file_ = NULL;
+  }
+}
+
+bool ConfigParser::FileCharStream::InitImpl() {
   assert(!file_);
   file_ = fopen(filename_.c_str(), "r");
   if (!file_) {
@@ -31,26 +66,36 @@ bool ConfigParser::OpenFile() {
   return true;
 }
 
-bool ConfigParser::AtEOF() const {
+bool ConfigParser::FileCharStream::AtEOFImpl() const {
   assert(file_);
-  return (!have_buffered_char_ && feof(file_));
+  return feof(file_);
 }
 
-char ConfigParser::GetChar() {
+char ConfigParser::FileCharStream::GetCharImpl() {
   assert(file_);
-  if (have_buffered_char_) {
-    have_buffered_char_ = false;
-    return buffered_char_;
-  }
   int ch = fgetc(file_);
   assert(ch != EOF);
   return ch;
 }
 
-void ConfigParser::UngetChar(char ch) {
-  assert(!have_buffered_char_);
-  buffered_char_ = ch;
-  have_buffered_char_ = true;
+ConfigParser::StringCharStream::StringCharStream(const string& data)
+    : data_(data),
+      pos_(0) {
+}
+
+bool ConfigParser::StringCharStream::AtEOFImpl() const {
+  return pos_ == data_.size();
+}
+
+char ConfigParser::StringCharStream::GetCharImpl() {
+  return data_.at(pos_++);
+}
+
+bool ConfigParser::Parse() {
+  stream_->Init();
+
+  string name;
+  ReadSettingName(&name);
 }
 
 bool ConfigParser::ReadSettingName(string* name_out) {
@@ -59,12 +104,12 @@ bool ConfigParser::ReadSettingName(string* name_out) {
 
   bool prev_was_slash = false;
   while (true) {
-    if (AtEOF())
+    if (stream_->AtEOF())
       break;
 
-    char ch = GetChar();
+    char ch = stream_->GetChar();
     if (isspace(ch)) {
-      UngetChar(ch);
+      stream_->UngetChar(ch);
       break;
     }
 
