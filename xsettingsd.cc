@@ -62,7 +62,7 @@ bool DataWriter::WriteZeros(size_t bytes_to_write) {
 
 
 SettingsManager::SettingsManager()
-    : serial_(5) {
+    : serial_(0) {
   // FIXME: Just for testing.
   settings_.insert(make_pair("int", new IntegerSetting("int", 5)));
   settings_.insert(make_pair("str", new StringSetting("str", "value")));
@@ -83,7 +83,7 @@ bool SettingsManager::UpdateProperty() {
   DataWriter writer(buffer, sizeof(buffer));
 
   // FIXME: First field is supposed to be byte-order.
-  if (!writer.WriteInt8(1))                 return false;
+  if (!writer.WriteInt8(0))                 return false;
   if (!writer.WriteZeros(3))                return false;
   if (!writer.WriteInt32(serial_))          return false;
   if (!writer.WriteInt32(settings_.size())) return false;
