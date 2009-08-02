@@ -118,8 +118,19 @@ class ConfigParserTest : public testing::Test {
     return data;
   }
 
-  // Helper methods to get the return value or string from
-  // ConfigParser::ReadSettingName().
+  bool GetReadIntegerResult(const string& input) {
+    bool result;
+    RunReadInteger(input, &result, NULL);
+    return result;
+  }
+  int32 GetReadIntegerData(const string& input) {
+    bool result;
+    int32 data;
+    RunReadInteger(input, &result, &data);
+    assert(result);
+    return data;
+  }
+
   bool GetReadStringResult(const string& input) {
     bool result;
     RunReadString(input, &result, NULL);
@@ -146,6 +157,20 @@ class ConfigParserTest : public testing::Test {
       *result_out = result;
     if (name_out)
       *name_out = name;
+  }
+
+  void RunReadInteger(const string& input,
+                      bool* result_out,
+                      int32* num_out) {
+    ConfigParser::CharStream* stream = new ConfigParser::StringCharStream(input);
+    assert(stream->Init());
+    ConfigParser parser(stream);
+    int32 num;
+    bool result = parser.ReadInteger(&num);
+    if (result_out)
+      *result_out = result;
+    if (num_out)
+      *num_out = num;
   }
 
   void RunReadString(const string& input,
@@ -175,6 +200,22 @@ TEST_F(ConfigParserTest, ReadSettingName) {
   EXPECT_FALSE(GetReadSettingNameResult("digit_after_slash/0"));
 }
 
+TEST_F(ConfigParserTest, ReadInteger) {
+  EXPECT_EQ(0,           GetReadIntegerData("0"));
+  EXPECT_EQ(10,          GetReadIntegerData("10"));
+  EXPECT_EQ(12,          GetReadIntegerData("0012"));
+  EXPECT_EQ(20,          GetReadIntegerData("20   "));
+  EXPECT_EQ(2147483647,  GetReadIntegerData("2147483647"));
+  EXPECT_EQ(-5,          GetReadIntegerData("-5"));
+  EXPECT_EQ(-2147483648, GetReadIntegerData("-2147483648"));
+  EXPECT_FALSE(GetReadIntegerResult(""));
+  EXPECT_FALSE(GetReadIntegerResult("-"));
+  EXPECT_FALSE(GetReadIntegerResult("--2"));
+  EXPECT_FALSE(GetReadIntegerResult("2-3"));
+  EXPECT_FALSE(GetReadIntegerResult(" "));
+  EXPECT_FALSE(GetReadIntegerResult(" 23"));
+}
+
 TEST_F(ConfigParserTest, ReadString) {
   EXPECT_EQ("test",              GetReadStringData("\"test\""));
   EXPECT_EQ(" some whitespace ", GetReadStringData("\" some whitespace \""));
@@ -183,6 +224,7 @@ TEST_F(ConfigParserTest, ReadString) {
   EXPECT_EQ("ar",                GetReadStringData("\"\\a\\r\""));
   EXPECT_EQ(" ",                 GetReadStringData("\" \""));
   EXPECT_EQ("",                  GetReadStringData("\"\""));
+  EXPECT_EQ("a",                 GetReadStringData("\"a\"   "));
   EXPECT_FALSE(GetReadStringResult(""));
   EXPECT_FALSE(GetReadStringResult("a"));
   EXPECT_FALSE(GetReadStringResult("\""));

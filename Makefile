@@ -1,4 +1,4 @@
-CC=g++
+CC=g++ -g -Wall -Werror
 
 xsettingsd: xsettingsd.cc config_parser.o data_writer.o \
             setting.o settings_manager.o

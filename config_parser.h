@@ -120,7 +120,12 @@ class ConfigParser {
   bool ReadColor(uint16* red_out, uint16* blue_out,
                  uint16* green_out, uint16* alpha_out);
 
+  void SetErrorF(const char* format, ...);
+
   CharStream* stream_;
+
+  int error_line_num_;
+  std::string error_str_;
 };
 
 }  // namespace

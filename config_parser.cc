@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cerrno>
+#include <cstdarg>
 #include <cstring>
 
 using std::string;
@@ -9,7 +10,8 @@ using std::string;
 namespace xsettingsd {
 
 ConfigParser::ConfigParser(CharStream* stream)
-    : stream_(stream) {
+    : stream_(stream),
+      error_line_num_(0) {
   assert(stream_);
 }
 
@@ -115,6 +117,7 @@ bool ConfigParser::Parse() {
 
   string name;
   ReadSettingName(&name);
+  return true;
 }
 
 bool ConfigParser::ReadSettingName(string* name_out) {
@@ -136,22 +139,22 @@ bool ConfigParser::ReadSettingName(string* name_out) {
         !(ch >= 'a' && ch <= 'z') &&
         !(ch >= '0' && ch <= '9') &&
         !(ch == '_' || ch == '/')) {
-      fprintf(stderr, "Got invalid character '%c' in setting name\n", ch);
+      SetErrorF("Got invalid character '%c' in setting name", ch);
       return false;
     }
 
     if (ch == '/' && name_out->empty()) {
-      fprintf(stderr, "Got leading slash in setting name\n");
+      SetErrorF("Got leading slash in setting name");
       return false;
     }
 
     if (prev_was_slash) {
       if (ch == '/') {
-        fprintf(stderr, "Got two consecutive slashes in setting name\n");
+        SetErrorF("Got two consecutive slashes in setting name");
         return false;
       }
       if (ch >= '0' && ch <= '9') {
-        fprintf(stderr, "Got digit after slash in setting name\n");
+        SetErrorF("Got digit after slash in setting name");
         return false;
       }
     }
@@ -163,14 +166,68 @@ bool ConfigParser::ReadSettingName(string* name_out) {
   }
 
   if (name_out->empty()) {
-    fprintf(stderr, "Got empty setting name\n");
+    SetErrorF("Got empty setting name");
     return false;
   }
 
   if (name_out->at(name_out->size() - 1) == '/') {
-    fprintf(stderr, "Got trailing slash in setting name\n");
+    SetErrorF("Got trailing slash in setting name");
     return false;
   }
+
+  return true;
+}
+
+bool ConfigParser::ReadInteger(int32* int_out) {
+  assert(int_out);
+  *int_out = 0;
+
+  bool got_digit = false;
+  bool negative = false;
+  while (true) {
+    if (stream_->AtEOF())
+      break;
+
+    char ch = stream_->GetChar();
+    if (isspace(ch)) {
+      stream_->UngetChar(ch);
+      break;
+    }
+
+    if (ch == '-') {
+      if (negative) {
+        SetErrorF("Got extra '-' before integer");
+        return false;
+      }
+
+      if (!got_digit) {
+        negative = true;
+        continue;
+      } else {
+        SetErrorF("Got '-' mid-integer");
+        return false;
+      }
+    }
+
+    if (!(ch >= '0' && ch <= '9')) {
+      SetErrorF("Got non-numeric character '%c'", ch);
+      return false;
+    }
+
+    got_digit = true;
+    *int_out *= 10;
+    *int_out += (ch - '0');
+
+    // TODO: Check for overflow.
+  }
+
+  if (!got_digit) {
+    SetErrorF("Got empty integer");
+    return false;
+  }
+
+  if (negative)
+    *int_out *= -1;
 
   return true;
 }
@@ -181,19 +238,19 @@ bool ConfigParser::ReadString(string* str_out) {
 
   bool in_backslash = false;
   if (stream_->AtEOF() || stream_->GetChar() != '\"') {
-    fprintf(stderr, "String is missing initial double-quote\n");
+    SetErrorF("String is missing initial double-quote");
     return false;
   }
 
   while (true) {
     if (stream_->AtEOF()) {
-      fprintf(stderr, "Open string at end of file\n");
+      SetErrorF("Open string at end of file");
       return false;
     }
 
     char ch = stream_->GetChar();
     if (ch == '\n') {
-      fprintf(stderr, "Got newline mid-string\n");
+      SetErrorF("Got newline mid-string");
       return false;
     }
 
@@ -217,6 +274,16 @@ bool ConfigParser::ReadString(string* str_out) {
   }
 
   return true;
+}
+
+void ConfigParser::SetErrorF(const char* format, ...) {
+  char buffer[1024];
+  va_list argp;
+  va_start(argp, format);
+  vsnprintf(buffer, sizeof(buffer), format, argp);
+  va_end(argp);
+  error_line_num_ = stream_->line_num();
+  error_str_.assign(buffer);
 }
 
 }  // namespace xsettingsd
