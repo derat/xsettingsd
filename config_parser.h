@@ -24,9 +24,14 @@ class ConfigParser {
     CharStream()
         : initialized_(false),
           have_buffered_char_(false),
-          buffered_char_(0) {
+          buffered_char_(0),
+          at_line_end_(true),
+          prev_at_line_end_(false),
+          line_num_(0) {
     }
     virtual ~CharStream() {}
+
+    int line_num() const { return line_num_; }
 
     // Must be called before using the stream.
     // The stream is unusable if false is returned.
@@ -55,6 +60,14 @@ class ConfigParser {
 
     // The character returned by UngetChar().
     char buffered_char_;
+
+    // Are we currently at the end of the line?
+    bool at_line_end_;
+
+    bool prev_at_line_end_;
+
+    // The line number of the last-fetched character.
+    int line_num_;
   };
 
   // An implementation of CharStream that reads from a file.

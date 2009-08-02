@@ -30,14 +30,32 @@ bool ConfigParser::CharStream::AtEOF() const {
 
 char ConfigParser::CharStream::GetChar() {
   assert(initialized_);
+
+  prev_at_line_end_ = at_line_end_;
+  if (at_line_end_) {
+    line_num_++;
+    at_line_end_ = false;
+  }
+
+  char ch = 0;
   if (have_buffered_char_) {
     have_buffered_char_ = false;
-    return buffered_char_;
+    ch = buffered_char_;
+  } else {
+    ch = GetCharImpl();
   }
-  return GetCharImpl();
+
+  if (ch == '\n')
+    at_line_end_ = true;
+
+  return ch;
 }
 
 void ConfigParser::CharStream::UngetChar(char ch) {
+  if (prev_at_line_end_)
+    line_num_--;
+  at_line_end_ = prev_at_line_end_;
+
   assert(initialized_);
   assert(!have_buffered_char_);
   buffered_char_ = ch;
@@ -155,6 +173,11 @@ bool ConfigParser::ReadSettingName(string* name_out) {
   }
 
   return true;
+}
+
+bool ConfigParser::ReadString(string* str_out) {
+  assert(str_out);
+  str_out->clear();
 }
 
 }  // namespace xsettingsd
