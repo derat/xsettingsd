@@ -103,34 +103,90 @@ TEST(CharStreamTest, LineNumbers) {
 
 class ConfigParserTest : public testing::Test {
  protected:
-  string GetReadSettingNameString(const string& data) {
-    ConfigParser::CharStream* stream = new ConfigParser::StringCharStream(data);
-    assert(stream->Init());
-    ConfigParser parser(stream);
-    string name;
-    assert(parser.ReadSettingName(&name));
-    return name;
+  // Helper methods to get the return value or string from
+  // ConfigParser::ReadSettingName().
+  bool GetReadSettingNameResult(const string& input) {
+    bool result;
+    RunReadSettingName(input, &result, NULL);
+    return result;
+  }
+  string GetReadSettingNameData(const string& input) {
+    bool result;
+    string data;
+    RunReadSettingName(input, &result, &data);
+    assert(result);
+    return data;
   }
 
-  bool GetReadSettingNameResult(const string& data) {
-    ConfigParser::CharStream* stream = new ConfigParser::StringCharStream(data);
+  // Helper methods to get the return value or string from
+  // ConfigParser::ReadSettingName().
+  bool GetReadStringResult(const string& input) {
+    bool result;
+    RunReadString(input, &result, NULL);
+    return result;
+  }
+  string GetReadStringData(const string& input) {
+    bool result;
+    string data;
+    RunReadString(input, &result, &data);
+    assert(result);
+    return data;
+  }
+
+ private:
+  void RunReadSettingName(const string& input,
+                          bool* result_out,
+                          string* name_out) {
+    ConfigParser::CharStream* stream = new ConfigParser::StringCharStream(input);
     assert(stream->Init());
     ConfigParser parser(stream);
     string name;
-    return parser.ReadSettingName(&name);
+    bool result = parser.ReadSettingName(&name);
+    if (result_out)
+      *result_out = result;
+    if (name_out)
+      *name_out = name;
+  }
+
+  void RunReadString(const string& input,
+                     bool* result_out,
+                     string* str_out) {
+    ConfigParser::CharStream* stream = new ConfigParser::StringCharStream(input);
+    assert(stream->Init());
+    ConfigParser parser(stream);
+    string str;
+    bool result = parser.ReadString(&str);
+    if (result_out)
+      *result_out = result;
+    if (str_out)
+      *str_out = str;
   }
 };
 
 TEST_F(ConfigParserTest, ReadSettingName) {
-  EXPECT_EQ(GetReadSettingNameString("test"), "test");
-  EXPECT_EQ(GetReadSettingNameString("First/Second"), "First/Second");
-  EXPECT_EQ(GetReadSettingNameString("Has_Underscore"), "Has_Underscore");
-  EXPECT_EQ(GetReadSettingNameString("trailing_space  "), "trailing_space");
+  EXPECT_EQ("test",           GetReadSettingNameData("test"));
+  EXPECT_EQ("First/Second",   GetReadSettingNameData("First/Second"));
+  EXPECT_EQ("Has_Underscore", GetReadSettingNameData("Has_Underscore"));
+  EXPECT_EQ("trailing_space", GetReadSettingNameData("trailing_space  "));
   EXPECT_FALSE(GetReadSettingNameResult(" leading_space"));
   EXPECT_FALSE(GetReadSettingNameResult("/leading_slash"));
   EXPECT_FALSE(GetReadSettingNameResult("trailing_slash/"));
   EXPECT_FALSE(GetReadSettingNameResult("double//slash"));
   EXPECT_FALSE(GetReadSettingNameResult("digit_after_slash/0"));
+}
+
+TEST_F(ConfigParserTest, ReadString) {
+  EXPECT_EQ("test",              GetReadStringData("\"test\""));
+  EXPECT_EQ(" some whitespace ", GetReadStringData("\" some whitespace \""));
+  EXPECT_EQ("a\tb\nc",           GetReadStringData("\"a\\tb\\nc\""));
+  EXPECT_EQ("a\"b\\c",           GetReadStringData("\"a\\\"b\\\\c\""));
+  EXPECT_EQ("ar",                GetReadStringData("\"\\a\\r\""));
+  EXPECT_EQ(" ",                 GetReadStringData("\" \""));
+  EXPECT_EQ("",                  GetReadStringData("\"\""));
+  EXPECT_FALSE(GetReadStringResult(""));
+  EXPECT_FALSE(GetReadStringResult("a"));
+  EXPECT_FALSE(GetReadStringResult("\""));
+  EXPECT_FALSE(GetReadStringResult("\"\n\""));
 }
 
 }  // namespace xsettingsd

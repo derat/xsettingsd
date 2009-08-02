@@ -178,6 +178,45 @@ bool ConfigParser::ReadSettingName(string* name_out) {
 bool ConfigParser::ReadString(string* str_out) {
   assert(str_out);
   str_out->clear();
+
+  bool in_backslash = false;
+  if (stream_->AtEOF() || stream_->GetChar() != '\"') {
+    fprintf(stderr, "String is missing initial double-quote\n");
+    return false;
+  }
+
+  while (true) {
+    if (stream_->AtEOF()) {
+      fprintf(stderr, "Open string at end of file\n");
+      return false;
+    }
+
+    char ch = stream_->GetChar();
+    if (ch == '\n') {
+      fprintf(stderr, "Got newline mid-string\n");
+      return false;
+    }
+
+    if (!in_backslash) {
+      if (ch == '"')
+        break;
+
+      if (ch == '\\') {
+        in_backslash = true;
+        continue;
+      }
+    }
+
+    if (in_backslash) {
+      in_backslash = false;
+      if (ch == 'n')      ch = '\n';
+      else if (ch == 't') ch = '\t';
+      // TODO: Maybe handle other characters.
+    }
+    str_out->push_back(ch);
+  }
+
+  return true;
 }
 
 }  // namespace xsettingsd
