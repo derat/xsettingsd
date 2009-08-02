@@ -1,9 +1,12 @@
 #ifndef __XSETTINGSD_CONFIG_PARSER_H__
 #define __XSETTINGSD_CONFIG_PARSER_H__
 
-#include "common.h"
-
 #include <string>
+#ifdef __TESTING
+#include <gtest/gtest_prod.h>
+#endif
+
+#include "common.h"
 
 namespace xsettingsd {
 
@@ -19,7 +22,8 @@ class ConfigParser {
   class CharStream {
    public:
     CharStream()
-        : have_buffered_char_(false),
+        : initialized_(false),
+          have_buffered_char_(false),
           buffered_char_(0) {
     }
     virtual ~CharStream() {}
@@ -84,6 +88,11 @@ class ConfigParser {
   bool Parse();
 
  private:
+#ifdef __TESTING
+  friend class ConfigParserTest;
+  FRIEND_TEST(ConfigParserTest, ReadSettingName);
+#endif
+
   // Read a setting name starting at the current position in the file.
   // Returns false if the setting name is invalid.
   bool ReadSettingName(std::string* name_out);
@@ -97,7 +106,6 @@ class ConfigParser {
 
   bool ReadColor(uint16* red_out, uint16* blue_out,
                  uint16* green_out, uint16* alpha_out);
-
 
   CharStream* stream_;
 };

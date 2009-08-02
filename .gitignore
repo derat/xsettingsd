@@ -1,3 +1,4 @@
 .*.swp
 xsettingsd
 *.o
+*_test

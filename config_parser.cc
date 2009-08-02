@@ -19,6 +19,7 @@ ConfigParser::~ConfigParser() {
 
 bool ConfigParser::CharStream::Init() {
   assert(!initialized_);
+  initialized_ = true;
   return InitImpl();
 }
 

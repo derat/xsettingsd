@@ -1,7 +1,7 @@
 CC=g++
 
-xsettingsd: xsettingsd.cc config_parser.h settings_manager.h \
-            config_parser.o data_writer.o \ setting.o settings_manager.o
+xsettingsd: xsettingsd.cc config_parser.o data_writer.o \
+            setting.o settings_manager.o
 	$(CC) -o xsettingsd xsettingsd.cc config_parser.o data_writer.o \
 	  setting.o settings_manager.o
 
@@ -18,5 +18,9 @@ settings_manager.o: settings_manager.cc settings_manager.h \
                     common.h data_writer.h setting.h
 	$(CC) -o settings_manager.o -c settings_manager.cc
 
+config_parser_test: config_parser_test.cc config_parser.o
+	$(CC) -D__TESTING -o config_parser_test \
+	  config_parser_test.cc config_parser.o -lgtest
+
 clean:
-	rm -f xsettingsd *.o
+	rm -f xsettingsd *.o *_test
