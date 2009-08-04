@@ -17,16 +17,13 @@ class Setting {
     TYPE_COLOR   = 2,
   };
 
-  Setting(const std::string& name, Type type)
-      : name_(name),
-        type_(type),
+  Setting(Type type)
+      : type_(type),
         serial_(0) {
   }
   virtual ~Setting() {}
 
-  const std::string& name() const { return name_; }
-
-  bool Write(DataWriter* writer) const;
+  bool Write(const std::string& name, DataWriter* writer) const;
 
  protected:
   // Swiped from xsettings-common.h in Owen Taylor's reference
@@ -38,8 +35,6 @@ class Setting {
  private:
   virtual bool WriteBody(DataWriter* writer) const = 0;
 
-  std::string name_;
-
   Type type_;
 
   uint32 serial_;
@@ -47,8 +42,8 @@ class Setting {
 
 class IntegerSetting : public Setting {
  public:
-  IntegerSetting(const std::string& name, int32 value)
-      : Setting(name, TYPE_INTEGER),
+  IntegerSetting(int32 value)
+      : Setting(TYPE_INTEGER),
         value_(value) {
   }
 
@@ -60,8 +55,8 @@ class IntegerSetting : public Setting {
 
 class StringSetting : public Setting {
  public:
-  StringSetting(const std::string& name, const std::string& value)
-      : Setting(name, TYPE_STRING),
+  StringSetting(const std::string& value)
+      : Setting(TYPE_STRING),
         value_(value) {
   }
 
@@ -73,12 +68,11 @@ class StringSetting : public Setting {
 
 class ColorSetting : public Setting {
  public:
-  ColorSetting(const std::string& name,
-               uint16 red,
+  ColorSetting(uint16 red,
                uint16 blue,
                uint16 green,
                uint16 alpha)
-      : Setting(name, TYPE_COLOR),
+      : Setting(TYPE_COLOR),
         red_(red),
         blue_(blue),
         green_(green),

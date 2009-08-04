@@ -1,7 +1,9 @@
 #ifndef __XSETTINGSD_CONFIG_PARSER_H__
 #define __XSETTINGSD_CONFIG_PARSER_H__
 
+#include <map>
 #include <string>
+
 #ifdef __TESTING
 #include <gtest/gtest_prod.h>
 #endif
@@ -10,6 +12,8 @@
 
 namespace xsettingsd {
 
+class Setting;
+
 class ConfigParser {
  public:
   class CharStream;
@@ -17,6 +21,9 @@ class ConfigParser {
   // The parser takes ownership of 'stream' and calls its Init() method.
   ConfigParser(CharStream* stream);
   ~ConfigParser();
+
+  int error_line_num() const { return error_line_num_; };
+  const std::string& error_str() const { return error_str_; }
 
   // Abstract base class for reading a stream of characters.
   class CharStream {
@@ -98,7 +105,7 @@ class ConfigParser {
     size_t pos_;
   };
 
-  bool Parse();
+  bool Parse(std::map<std::string, Setting*>* settings_map);
 
  private:
 #ifdef __TESTING
@@ -106,15 +113,21 @@ class ConfigParser {
   FRIEND_TEST(ConfigParserTest, ReadSettingName);
 #endif
 
-  // Read a setting name starting at the current position in the file.
+  // Read a setting name starting at the current position in the stream.
   // Returns false if the setting name is invalid.
   bool ReadSettingName(std::string* name_out);
 
-  // Read an integer starting at the current position in the file.
+  // Read the value starting at the current position in the stream.
+  // Its type is inferred from the first character.  'setting_ptr' is
+  // updated to point at a newly-allocated Setting object (which the caller
+  // is responsible for deleting).
+  bool ReadValue(Setting** setting_ptr);
+
+  // Read an integer starting at the current position in the stream.
   bool ReadInteger(int32* int_out);
 
   // Read a double-quoted string starting at the current position in the
-  // file.
+  // stream.
   bool ReadString(std::string* str_out);
 
   bool ReadColor(uint16* red_out, uint16* blue_out,

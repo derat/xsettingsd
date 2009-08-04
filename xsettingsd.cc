@@ -10,8 +10,5 @@ int main(int argc, char** argv) {
   SettingsManager manager;
   manager.UpdateProperty();
 
-  string data = "test";
-  ConfigParser parser(new ConfigParser::StringCharStream(data));
-  parser.Parse();
   return 0;
 }

@@ -2,15 +2,17 @@
 
 #include "data_writer.h"
 
+using std::string;
+
 namespace xsettingsd {
 
-bool Setting::Write(DataWriter* writer) const {
-  if (!writer->WriteInt8(type_))                        return false;
-  if (!writer->WriteZeros(1))                           return false;
-  if (!writer->WriteInt16(name_.size()))                return false;
-  if (!writer->WriteBytes(name_.data(), name_.size()))  return false;
-  if (!writer->WriteZeros(GetPadding(name_.size(), 4))) return false;
-  if (!writer->WriteInt32(serial_))                     return false;
+bool Setting::Write(const string& name, DataWriter* writer) const {
+  if (!writer->WriteInt8(type_))                       return false;
+  if (!writer->WriteZeros(1))                          return false;
+  if (!writer->WriteInt16(name.size()))                return false;
+  if (!writer->WriteBytes(name.data(), name.size()))   return false;
+  if (!writer->WriteZeros(GetPadding(name.size(), 4))) return false;
+  if (!writer->WriteInt32(serial_))                    return false;
 
   return WriteBody(writer);
 }

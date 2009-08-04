@@ -5,6 +5,9 @@
 #include <cstdarg>
 #include <cstring>
 
+#include "setting.h"
+
+using std::map;
 using std::string;
 
 namespace xsettingsd {
@@ -112,11 +115,71 @@ char ConfigParser::StringCharStream::GetCharImpl() {
   return data_.at(pos_++);
 }
 
-bool ConfigParser::Parse() {
-  stream_->Init();
+bool ConfigParser::Parse(map<string, Setting*>* settings_map) {
+  assert(settings_map);
+  assert(settings_map->empty());
 
-  string name;
-  ReadSettingName(&name);
+  if (!stream_->Init()) {
+    SetErrorF("Unable to initialize stream");
+    return false;
+  }
+
+  enum State {
+    NO_SETTING_NAME = 0,
+    GOT_SETTING_NAME,
+    GOT_VALUE,
+  };
+  State state = NO_SETTING_NAME;
+  string setting_name;
+  bool in_comment = false;
+
+  while (!stream_->AtEOF()) {
+    char ch = stream_->GetChar();
+
+    if (ch == '#') {
+      in_comment = true;
+      continue;
+    }
+
+    if (ch == '\n') {
+      if (state == GOT_SETTING_NAME) {
+        SetErrorF("No value for setting \"%s\"", setting_name.c_str());
+        return false;
+      }
+      state = NO_SETTING_NAME;
+      setting_name.clear();
+      in_comment = false;
+    }
+
+    if (in_comment || isspace(ch))
+      continue;
+
+    stream_->UngetChar(ch);
+
+    switch (state) {
+      case NO_SETTING_NAME:
+        if (!ReadSettingName(&setting_name))
+          return false;
+        if (settings_map->count(setting_name)) {
+          SetErrorF("Got duplicate setting name \"%s\"", setting_name.c_str());
+          return false;
+        }
+        state = GOT_SETTING_NAME;
+        break;
+      case GOT_SETTING_NAME:
+        {
+          Setting* setting = NULL;
+          if (!ReadValue(&setting))
+            return false;
+          settings_map->insert(make_pair(setting_name, setting));
+        }
+        state = GOT_VALUE;
+        break;
+      case GOT_VALUE:
+        SetErrorF("Got unexpected text after value");
+        return false;
+    }
+  }
   return true;
 }
 
@@ -174,6 +237,30 @@ bool ConfigParser::ReadSettingName(string* name_out) {
     return false;
   }
 
+  return true;
+}
+
+bool ConfigParser::ReadValue(Setting** setting_ptr) {
+  assert(setting_ptr);
+  *setting_ptr = NULL;
+
+  char ch = stream_->GetChar();
+  stream_->UngetChar(ch);
+
+  if (ch >= '0' && ch <= '9') {
+    int32 value = 0;
+    if (!ReadInteger(&value))
+      return false;
+    *setting_ptr = new IntegerSetting(value);
+  } else if (ch == '"') {
+    string value;
+    if (!ReadString(&value))
+      return false;
+    *setting_ptr = new StringSetting(value);
+  } else {
+    SetErrorF("Got invalid setting value");
+    return false;
+  }
   return true;
 }
 

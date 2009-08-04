@@ -11,10 +11,6 @@ namespace xsettingsd {
 
 SettingsManager::SettingsManager()
     : serial_(0) {
-  // FIXME: Just for testing.
-  settings_.insert(make_pair("int", new IntegerSetting("int", 5)));
-  settings_.insert(make_pair("str", new StringSetting("str", "value")));
-  settings_.insert(make_pair("col", new ColorSetting("col", 1, 2, 3, 4)));
 }
 
 SettingsManager::~SettingsManager() {
@@ -38,7 +34,7 @@ bool SettingsManager::UpdateProperty() {
 
   for (map<string, Setting*>::const_iterator it = settings_.begin();
        it != settings_.end(); ++it) {
-    if (!it->second->Write(&writer))
+    if (!it->second->Write(it->first, &writer))
       return false;
   }
 

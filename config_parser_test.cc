@@ -1,10 +1,13 @@
 #include <cassert>
+#include <map>
 #include <string>
 
 #include <gtest/gtest.h>
 
 #include "config_parser.h"
+#include "setting.h"
 
+using std::map;
 using std::string;
 
 namespace xsettingsd {
@@ -242,6 +245,17 @@ TEST_F(ConfigParserTest, ReadString) {
   EXPECT_FALSE(GetReadStringResult("a"));
   EXPECT_FALSE(GetReadStringResult("\""));
   EXPECT_FALSE(GetReadStringResult("\"\n\""));
+}
+
+TEST_F(ConfigParserTest, Parse) {
+  const char* input =
+      "IntSetting  3\n"
+      "StringSetting \"this is a string\"\n"
+      "AnotherIntSetting 2  # trailing comment\n";
+  ConfigParser parser(new ConfigParser::StringCharStream(input));
+  map<string, Setting*> settings;
+  ASSERT_TRUE(parser.Parse(&settings));
+  ASSERT_EQ(3, settings.size());
 }
 
 }  // namespace xsettingsd
