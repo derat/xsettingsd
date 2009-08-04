@@ -216,14 +216,15 @@ TEST_F(ConfigParserTest, ReadSettingName) {
 }
 
 TEST_F(ConfigParserTest, ReadInteger) {
-  EXPECT_EQ(0,           GetReadIntegerData("0"));
-  EXPECT_EQ(10,          GetReadIntegerData("10"));
-  EXPECT_EQ(12,          GetReadIntegerData("0012"));
-  EXPECT_EQ(15,          GetReadIntegerData("15#2 comment"));
-  EXPECT_EQ(20,          GetReadIntegerData("20   "));
-  EXPECT_EQ(2147483647,  GetReadIntegerData("2147483647"));
-  EXPECT_EQ(-5,          GetReadIntegerData("-5"));
-  EXPECT_EQ(-2147483648, GetReadIntegerData("-2147483648"));
+  EXPECT_EQ(0,             GetReadIntegerData("0"));
+  EXPECT_EQ(10,            GetReadIntegerData("10"));
+  EXPECT_EQ(12,            GetReadIntegerData("0012"));
+  EXPECT_EQ(15,            GetReadIntegerData("15#2 comment"));
+  EXPECT_EQ(20,            GetReadIntegerData("20   "));
+  EXPECT_EQ(2147483647,    GetReadIntegerData("2147483647"));
+  EXPECT_EQ(-5,            GetReadIntegerData("-5"));
+  // See http://gcc.gnu.org/ml/gcc-bugs/2003-04/msg00082.html
+  EXPECT_EQ(-2147483647-1, GetReadIntegerData("-2147483648"));
   EXPECT_FALSE(GetReadIntegerResult(""));
   EXPECT_FALSE(GetReadIntegerResult("-"));
   EXPECT_FALSE(GetReadIntegerResult("--2"));
