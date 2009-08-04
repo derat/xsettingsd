@@ -5,6 +5,7 @@
 #include <string>
 
 #include "common.h"
+#include "setting.h"
 
 namespace xsettingsd {
 
@@ -13,12 +14,11 @@ class Setting;
 class SettingsManager {
  public:
   SettingsManager();
-  ~SettingsManager();
 
   bool UpdateProperty();
 
  private:
-  std::map<std::string, Setting*> settings_;
+  SettingsMap settings_;
 
   uint32 serial_;
 };

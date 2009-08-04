@@ -1,6 +1,7 @@
 #ifndef __XSETTINGSD_SETTING_H__
 #define __XSETTINGSD_SETTING_H__
 
+#include <map>
 #include <string>
 
 #include "common.h"
@@ -86,6 +87,18 @@ class ColorSetting : public Setting {
   uint16 blue_;
   uint16 green_;
   uint16 alpha_;
+};
+
+class SettingsMap {
+ public:
+  ~SettingsMap();
+
+  typedef std::map<std::string, Setting*> Map;
+  const Map& map() const { return map_; }
+  Map* mutable_map() { return &map_; }
+
+ private:
+  Map map_;
 };
 
 }  // namespace xsettingsd

@@ -22,6 +22,74 @@ ConfigParser::~ConfigParser() {
   delete stream_;
 }
 
+bool ConfigParser::Parse(SettingsMap* settings) {
+  assert(settings);
+  assert(settings->map().empty());
+
+  if (!stream_->Init()) {
+    SetErrorF("Unable to initialize stream");
+    return false;
+  }
+
+  enum State {
+    NO_SETTING_NAME = 0,
+    GOT_SETTING_NAME,
+    GOT_VALUE,
+  };
+  State state = NO_SETTING_NAME;
+  string setting_name;
+  bool in_comment = false;
+
+  while (!stream_->AtEOF()) {
+    char ch = stream_->GetChar();
+
+    if (ch == '#') {
+      in_comment = true;
+      continue;
+    }
+
+    if (ch == '\n') {
+      if (state == GOT_SETTING_NAME) {
+        SetErrorF("No value for setting \"%s\"", setting_name.c_str());
+        return false;
+      }
+      state = NO_SETTING_NAME;
+      setting_name.clear();
+      in_comment = false;
+    }
+
+    if (in_comment || isspace(ch))
+      continue;
+
+    stream_->UngetChar(ch);
+
+    switch (state) {
+      case NO_SETTING_NAME:
+        if (!ReadSettingName(&setting_name))
+          return false;
+        if (settings->map().count(setting_name)) {
+          SetErrorF("Got duplicate setting name \"%s\"", setting_name.c_str());
+          return false;
+        }
+        state = GOT_SETTING_NAME;
+        break;
+      case GOT_SETTING_NAME:
+        {
+          Setting* setting = NULL;
+          if (!ReadValue(&setting))
+            return false;
+          settings->mutable_map()->insert(make_pair(setting_name, setting));
+        }
+        state = GOT_VALUE;
+        break;
+      case GOT_VALUE:
+        SetErrorF("Got unexpected text after value");
+        return false;
+    }
+  }
+  return true;
+}
+
 bool ConfigParser::CharStream::Init() {
   assert(!initialized_);
   initialized_ = true;
@@ -113,74 +181,6 @@ bool ConfigParser::StringCharStream::AtEOFImpl() const {
 
 char ConfigParser::StringCharStream::GetCharImpl() {
   return data_.at(pos_++);
-}
-
-bool ConfigParser::Parse(map<string, Setting*>* settings_map) {
-  assert(settings_map);
-  assert(settings_map->empty());
-
-  if (!stream_->Init()) {
-    SetErrorF("Unable to initialize stream");
-    return false;
-  }
-
-  enum State {
-    NO_SETTING_NAME = 0,
-    GOT_SETTING_NAME,
-    GOT_VALUE,
-  };
-  State state = NO_SETTING_NAME;
-  string setting_name;
-  bool in_comment = false;
-
-  while (!stream_->AtEOF()) {
-    char ch = stream_->GetChar();
-
-    if (ch == '#') {
-      in_comment = true;
-      continue;
-    }
-
-    if (ch == '\n') {
-      if (state == GOT_SETTING_NAME) {
-        SetErrorF("No value for setting \"%s\"", setting_name.c_str());
-        return false;
-      }
-      state = NO_SETTING_NAME;
-      setting_name.clear();
-      in_comment = false;
-    }
-
-    if (in_comment || isspace(ch))
-      continue;
-
-    stream_->UngetChar(ch);
-
-    switch (state) {
-      case NO_SETTING_NAME:
-        if (!ReadSettingName(&setting_name))
-          return false;
-        if (settings_map->count(setting_name)) {
-          SetErrorF("Got duplicate setting name \"%s\"", setting_name.c_str());
-          return false;
-        }
-        state = GOT_SETTING_NAME;
-        break;
-      case GOT_SETTING_NAME:
-        {
-          Setting* setting = NULL;
-          if (!ReadValue(&setting))
-            return false;
-          settings_map->insert(make_pair(setting_name, setting));
-        }
-        state = GOT_VALUE;
-        break;
-      case GOT_VALUE:
-        SetErrorF("Got unexpected text after value");
-        return false;
-    }
-  }
-  return true;
 }
 
 bool ConfigParser::ReadSettingName(string* name_out) {

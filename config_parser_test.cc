@@ -253,9 +253,9 @@ TEST_F(ConfigParserTest, Parse) {
       "StringSetting \"this is a string\"\n"
       "AnotherIntSetting 2  # trailing comment\n";
   ConfigParser parser(new ConfigParser::StringCharStream(input));
-  map<string, Setting*> settings;
+  SettingsMap settings;
   ASSERT_TRUE(parser.Parse(&settings));
-  ASSERT_EQ(3, settings.size());
+  ASSERT_EQ(3, settings.map().size());
 }
 
 }  // namespace xsettingsd

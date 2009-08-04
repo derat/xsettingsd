@@ -13,6 +13,7 @@
 namespace xsettingsd {
 
 class Setting;
+class SettingsMap;
 
 class ConfigParser {
  public:
@@ -24,6 +25,8 @@ class ConfigParser {
 
   int error_line_num() const { return error_line_num_; };
   const std::string& error_str() const { return error_str_; }
+
+  bool Parse(SettingsMap* settings_out);
 
   // Abstract base class for reading a stream of characters.
   class CharStream {
@@ -104,8 +107,6 @@ class ConfigParser {
     std::string data_;
     size_t pos_;
   };
-
-  bool Parse(std::map<std::string, Setting*>* settings_map);
 
  private:
 #ifdef __TESTING

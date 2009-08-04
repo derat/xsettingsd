@@ -36,4 +36,11 @@ bool ColorSetting::WriteBody(DataWriter* writer) const {
   return true;
 }
 
+SettingsMap::~SettingsMap() {
+  for (Map::iterator it = map_.begin(); it != map_.end(); ++it) {
+    delete it->second;
+  }
+  map_.clear();
+}
+
 }  // namespace xsettingsd
