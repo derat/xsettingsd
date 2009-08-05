@@ -12,8 +12,9 @@ using std::string;
 
 namespace xsettingsd {
 
-SettingsManager::SettingsManager()
-    : serial_(0) {
+SettingsManager::SettingsManager(const string& config_filename)
+    : config_filename_(config_filename),
+      serial_(0) {
 }
 
 #if 0

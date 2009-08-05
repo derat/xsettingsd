@@ -34,7 +34,9 @@ void ConfigParser::Reset(CharStream* stream) {
   error_str_.clear();
 }
 
-bool ConfigParser::Parse(SettingsMap* settings) {
+bool ConfigParser::Parse(SettingsMap* settings,
+                         const SettingsMap* prev_settings,
+                         uint32_t serial) {
   assert(settings);
   settings->mutable_map()->clear();
 
@@ -95,6 +97,9 @@ bool ConfigParser::Parse(SettingsMap* settings) {
           Setting* setting = NULL;
           if (!ReadValue(&setting))
             return false;
+          const Setting* prev_setting =
+              prev_settings ? prev_settings->GetSetting(setting_name) : NULL;
+          setting->UpdateSerial(prev_setting, serial);
           settings->mutable_map()->insert(make_pair(setting_name, setting));
         }
         state = GOT_VALUE;

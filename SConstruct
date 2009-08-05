@@ -23,11 +23,13 @@ def run_tests(target, source, env):
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT,
                             close_fds=True)
+    [stdout, stderr] = proc.communicate()
     proc.wait()
     if proc.returncode == 0:
       print '%s OK' % padded_name
     else:
-      print '%s FAILED' % padded_name
+      print "%s FAILED\n" % padded_name
+      print stdout
 
 run_tests_builder = Builder(action=run_tests)
 

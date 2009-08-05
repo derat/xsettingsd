@@ -4,7 +4,7 @@
 #ifndef __XSETTINGSD_SETTINGS_MANAGER_H__
 #define __XSETTINGSD_SETTINGS_MANAGER_H__
 
-#include <map>
+#include <stdint.h>
 #include <string>
 
 #include "common.h"
@@ -16,11 +16,13 @@ class Setting;
 
 class SettingsManager {
  public:
-  SettingsManager();
+  SettingsManager(const std::string& config_filename);
 
   bool UpdateProperty();
 
  private:
+  std::string config_filename_;
+
   SettingsMap settings_;
 
   uint32_t serial_;

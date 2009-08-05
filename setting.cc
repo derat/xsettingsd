@@ -26,10 +26,11 @@ bool Setting::Write(const string& name, DataWriter* writer) const {
   return WriteBody(writer);
 }
 
-void Setting::UpdateSerial(const Setting& prev) {
-  serial_ = prev.serial_;
-  if (!operator==(prev))
-    serial_++;
+void Setting::UpdateSerial(const Setting* prev, uint32_t serial) {
+  if (prev && operator==(*prev))
+    serial_ = prev->serial_;
+  else
+    serial_ = serial;
 }
 
 bool IntegerSetting::WriteBody(DataWriter* writer) const {
@@ -88,15 +89,6 @@ const Setting* SettingsMap::GetSetting(const std::string& name) const {
   if (it == map_.end())
     return NULL;
   return it->second;
-}
-
-void SettingsMap::SetSerials(const SettingsMap& prev_map) {
-  for (Map::iterator it = map_.begin(); it != map_.end(); ++it) {
-    const Setting* prev_setting = prev_map.GetSetting(it->first);
-    if (!prev_setting)
-      continue;
-    it->second->UpdateSerial(*prev_setting);
-  }
 }
 
 }  // namespace xsettingsd

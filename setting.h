@@ -32,6 +32,8 @@ class Setting {
   }
   virtual ~Setting() {}
 
+  uint32_t serial() const { return serial_; }
+
   bool operator==(const Setting& other) const;
 
   // Write this setting (using the passed-in setting name) in the format
@@ -39,9 +41,9 @@ class Setting {
   bool Write(const std::string& name, DataWriter* writer) const;
 
   // Update this setting's serial number based on the previous version of
-  // the setting.  (If the setting changed, we'll increment the serial;
-  // otherwise we use the same serial as before.)
-  void UpdateSerial(const Setting& prev);
+  // the setting.  (If the setting changed, we use 'serial'; otherwise we
+  // use the same serial as 'prev'.)
+  void UpdateSerial(const Setting* prev, uint32_t serial);
 
  protected:
   // Swiped from xsettings-common.h in Owen Taylor's reference
@@ -150,9 +152,6 @@ class SettingsMap {
 
   // Get a pointer to a setting or NULL if it doesn't exist.
   const Setting* GetSetting(const std::string& name) const;
-
-  // Update settings' serial numbers based on the previous map.
-  void SetSerials(const SettingsMap& prev_map);
 
  private:
   Map map_;

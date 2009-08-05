@@ -326,9 +326,9 @@ TEST_F(ConfigParserTest, Parse) {
       "Setting4 \"\\\"quoted\\\"\"# comment";
   ConfigParser parser(new ConfigParser::StringCharStream(good_input));
   SettingsMap settings;
-  ASSERT_TRUE(parser.Parse(&settings));
+  ASSERT_TRUE(parser.Parse(&settings, NULL, 0));
   ASSERT_EQ(4, settings.map().size());
-  EXPECT_PRED_FORMAT2(IntegerSettingEquals, 5, settings.GetSetting("Setting1"));
+  EXPECT_PRED_FORMAT2(IntegerSettingEquals, 4, settings.GetSetting("Setting1"));
   EXPECT_PRED_FORMAT2(StringSettingEquals,
                       "this is a string",
                       settings.GetSetting("Setting2"));
@@ -339,19 +339,19 @@ TEST_F(ConfigParserTest, Parse) {
 
   const char* extra_name = "SettingName 3 blah";
   parser.Reset(new ConfigParser::StringCharStream(extra_name));
-  EXPECT_FALSE(parser.Parse(&settings));
+  EXPECT_FALSE(parser.Parse(&settings, NULL, 0));
 
   const char* missing_value = "SettingName";
   parser.Reset(new ConfigParser::StringCharStream(missing_value));
-  EXPECT_FALSE(parser.Parse(&settings));
+  EXPECT_FALSE(parser.Parse(&settings, NULL, 0));
 
   const char* comment_instead_of_value = "SettingName # test 3\n";
   parser.Reset(new ConfigParser::StringCharStream(comment_instead_of_value));
-  EXPECT_FALSE(parser.Parse(&settings));
+  EXPECT_FALSE(parser.Parse(&settings, NULL, 0));
 
   const char* duplicate_name = "SettingName 4\nSettingName 3";
   parser.Reset(new ConfigParser::StringCharStream(duplicate_name));
-  EXPECT_FALSE(parser.Parse(&settings));
+  EXPECT_FALSE(parser.Parse(&settings, NULL, 0));
 }
 
 }  // namespace xsettingsd

@@ -10,7 +10,7 @@ using namespace xsettingsd;
 using std::string;
 
 int main(int argc, char** argv) {
-  SettingsManager manager;
+  SettingsManager manager("bogus_file");
   manager.UpdateProperty();
 
   return 0;

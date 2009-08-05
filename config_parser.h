@@ -32,7 +32,9 @@ class ConfigParser {
 
   void Reset(CharStream* stream);
 
-  bool Parse(SettingsMap* settings_out);
+  bool Parse(SettingsMap* settings,
+             const SettingsMap* prev_settings,
+             uint32_t serial);
 
   // Abstract base class for reading a stream of characters.
   class CharStream {
