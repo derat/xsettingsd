@@ -224,6 +224,7 @@ TEST_F(ConfigParserTest, ReadInteger) {
   EXPECT_EQ(2147483647,    GetReadIntegerData("2147483647"));
   EXPECT_EQ(-5,            GetReadIntegerData("-5"));
   // See http://gcc.gnu.org/ml/gcc-bugs/2003-04/msg00082.html
+  // FIXME: http://groups.google.com/group/comp.lang.c++/browse_thread/thread/4f5ed69b31fd5e1e?pli=1
   EXPECT_EQ(-2147483647-1, GetReadIntegerData("-2147483648"));
   EXPECT_FALSE(GetReadIntegerResult(""));
   EXPECT_FALSE(GetReadIntegerResult("-"));
@@ -249,14 +250,23 @@ TEST_F(ConfigParserTest, ReadString) {
 }
 
 TEST_F(ConfigParserTest, Parse) {
-  const char* input =
+  const char* good_input =
       "IntSetting  3\n"
       "StringSetting \"this is a string\"\n"
+      "# commented line\n"
       "AnotherIntSetting 2  # trailing comment\n";
-  ConfigParser parser(new ConfigParser::StringCharStream(input));
+  ConfigParser parser(new ConfigParser::StringCharStream(good_input));
   SettingsMap settings;
   ASSERT_TRUE(parser.Parse(&settings));
   ASSERT_EQ(3, settings.map().size());
+
+  const char* extra_name = "IntSetting 3 blah";
+  parser.Reset(new ConfigParser::StringCharStream(extra_name));
+  EXPECT_FALSE(parser.Parse(&settings));
+
+  const char* missing_value = "IntSetting";
+  parser.Reset(new ConfigParser::StringCharStream(missing_value));
+  EXPECT_FALSE(parser.Parse(&settings));
 }
 
 }  // namespace xsettingsd

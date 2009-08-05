@@ -13,18 +13,27 @@ using std::string;
 namespace xsettingsd {
 
 ConfigParser::ConfigParser(CharStream* stream)
-    : stream_(stream),
+    : stream_(NULL),
       error_line_num_(0) {
-  assert(stream_);
+  Reset(stream);
 }
 
 ConfigParser::~ConfigParser() {
   delete stream_;
 }
 
+void ConfigParser::Reset(CharStream* stream) {
+  assert(stream);
+  delete stream_;
+  stream_ = stream;
+
+  error_line_num_ = 0;
+  error_str_.clear();
+}
+
 bool ConfigParser::Parse(SettingsMap* settings) {
   assert(settings);
-  assert(settings->map().empty());
+  settings->mutable_map()->clear();
 
   if (!stream_->Init()) {
     SetErrorF("Unable to initialize stream");
@@ -32,8 +41,13 @@ bool ConfigParser::Parse(SettingsMap* settings) {
   }
 
   enum State {
+    // At the beginning of a line, before we've encountered a setting name.
     NO_SETTING_NAME = 0,
+
+    // We've gotten the setting name but not its value.
     GOT_SETTING_NAME,
+
+    // We've got the value.
     GOT_VALUE,
   };
   State state = NO_SETTING_NAME;
@@ -86,6 +100,11 @@ bool ConfigParser::Parse(SettingsMap* settings) {
         SetErrorF("Got unexpected text after value");
         return false;
     }
+  }
+
+  if (state != NO_SETTING_NAME && state != GOT_VALUE) {
+    SetErrorF("Unexpected end of file");
+    return false;
   }
   return true;
 }

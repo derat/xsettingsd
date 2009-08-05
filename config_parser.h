@@ -19,12 +19,14 @@ class ConfigParser {
  public:
   class CharStream;
 
-  // The parser takes ownership of 'stream' and calls its Init() method.
+  // The parser takes ownership of 'stream'.
   ConfigParser(CharStream* stream);
   ~ConfigParser();
 
   int error_line_num() const { return error_line_num_; };
   const std::string& error_str() const { return error_str_; }
+
+  void Reset(CharStream* stream);
 
   bool Parse(SettingsMap* settings_out);
 
