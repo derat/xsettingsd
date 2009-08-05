@@ -41,6 +41,7 @@ env['CCFLAGS'] = '-Wall -Werror -g'
 
 
 srcs = Split('''\
+  common.cc
   config_parser.cc
   data_writer.cc
   setting.cc

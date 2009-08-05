@@ -8,6 +8,10 @@
 #include <stdint.h>
 #include <string>
 
+#ifdef __TESTING
+#include <gtest/gtest_prod.h>
+#endif
+
 #include "common.h"
 
 namespace xsettingsd {
@@ -43,7 +47,8 @@ class Setting {
   // Swiped from xsettings-common.h in Owen Taylor's reference
   // implementation.
   static int GetPadding(int n, int m) {
-    return ((n + m - 1) & (~(m - 1)));
+    return (m - (n % m)) % m;
+    //return ((n + m - 1) & (~(m - 1)));  // FIXME
   }
 
  private:
@@ -69,6 +74,11 @@ class IntegerSetting : public Setting {
   }
 
  private:
+#ifdef __TESTING
+  friend class IntegerSettingTest;
+  FRIEND_TEST(IntegerSettingTest, WriteBody);
+#endif
+
   bool WriteBody(DataWriter* writer) const;
   bool EqualsImpl(const Setting& other) const;
 
