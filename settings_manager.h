@@ -20,7 +20,9 @@ class SettingsManager {
  private:
   SettingsMap settings_;
 
-  uint32 serial_;
+  uint32_t serial_;
+
+  DISALLOW_COPY_AND_ASSIGN(SettingsManager);
 };
 
 }  // namespace xsettingsd

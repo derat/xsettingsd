@@ -267,7 +267,7 @@ bool ConfigParser::ReadValue(Setting** setting_ptr) {
   stream_->UngetChar(ch);
 
   if (ch >= '0' && ch <= '9') {
-    int32 value = 0;
+    int32_t value = 0;
     if (!ReadInteger(&value))
       return false;
     *setting_ptr = new IntegerSetting(value);
@@ -283,7 +283,7 @@ bool ConfigParser::ReadValue(Setting** setting_ptr) {
   return true;
 }
 
-bool ConfigParser::ReadInteger(int32* int_out) {
+bool ConfigParser::ReadInteger(int32_t* int_out) {
   assert(int_out);
   *int_out = 0;
 

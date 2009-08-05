@@ -3,12 +3,9 @@
 
 namespace xsettingsd {
 
-// FIXME: Fix this for 64-bit.
-typedef char  int8;
-typedef short int16;
-typedef int   int32;
-typedef unsigned short uint16;
-typedef unsigned int   uint32;
+#define DISALLOW_COPY_AND_ASSIGN(class_name) \
+  class_name(const class_name&); \
+  void operator=(const class_name&)
 
 }  // namespace xsettingsd
 

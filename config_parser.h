@@ -2,6 +2,7 @@
 #define __XSETTINGSD_CONFIG_PARSER_H__
 
 #include <map>
+#include <stdint.h>
 #include <string>
 
 #ifdef __TESTING
@@ -20,7 +21,7 @@ class ConfigParser {
   class CharStream;
 
   // The parser takes ownership of 'stream'.
-  ConfigParser(CharStream* stream);
+  explicit ConfigParser(CharStream* stream);
   ~ConfigParser();
 
   int error_line_num() const { return error_line_num_; };
@@ -80,6 +81,8 @@ class ConfigParser {
 
     // The line number of the last-fetched character.
     int line_num_;
+
+    DISALLOW_COPY_AND_ASSIGN(CharStream);
   };
 
   // An implementation of CharStream that reads from a file.
@@ -95,6 +98,8 @@ class ConfigParser {
 
     std::string filename_;
     FILE* file_;
+
+    DISALLOW_COPY_AND_ASSIGN(FileCharStream);
   };
 
   // An implementation of CharStream that reads from an in-memory string.
@@ -108,6 +113,8 @@ class ConfigParser {
 
     std::string data_;
     size_t pos_;
+
+    DISALLOW_COPY_AND_ASSIGN(StringCharStream);
   };
 
  private:
@@ -127,14 +134,14 @@ class ConfigParser {
   bool ReadValue(Setting** setting_ptr);
 
   // Read an integer starting at the current position in the stream.
-  bool ReadInteger(int32* int_out);
+  bool ReadInteger(int32_t* int_out);
 
   // Read a double-quoted string starting at the current position in the
   // stream.
   bool ReadString(std::string* str_out);
 
-  bool ReadColor(uint16* red_out, uint16* blue_out,
-                 uint16* green_out, uint16* alpha_out);
+  bool ReadColor(uint16_t* red_out, uint16_t* blue_out,
+                 uint16_t* green_out, uint16_t* alpha_out);
 
   void SetErrorF(const char* format, ...);
 
@@ -142,6 +149,8 @@ class ConfigParser {
 
   int error_line_num_;
   std::string error_str_;
+
+  DISALLOW_COPY_AND_ASSIGN(ConfigParser);
 };
 
 }  // namespace

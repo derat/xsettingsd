@@ -24,30 +24,30 @@ bool DataWriter::WriteBytes(const char* data, size_t bytes_to_write) {
   return true;
 }
 
-bool DataWriter::WriteInt8(int8 num) {
-  if (sizeof(int8) > buf_len_ - bytes_written_)
+bool DataWriter::WriteInt8(int8_t num) {
+  if (sizeof(int8_t) > buf_len_ - bytes_written_)
     return false;
 
-  *(reinterpret_cast<int8*>(buffer_ + bytes_written_)) = num;
-  bytes_written_ += sizeof(int8);
+  *(reinterpret_cast<int8_t*>(buffer_ + bytes_written_)) = num;
+  bytes_written_ += sizeof(int8_t);
   return true;
 }
 
-bool DataWriter::WriteInt16(int16 num) {
-  if (sizeof(int16) > buf_len_ - bytes_written_)
+bool DataWriter::WriteInt16(int16_t num) {
+  if (sizeof(int16_t) > buf_len_ - bytes_written_)
     return false;
 
-  *(reinterpret_cast<int16*>(buffer_ + bytes_written_)) = num;
-  bytes_written_ += sizeof(int16);
+  *(reinterpret_cast<int16_t*>(buffer_ + bytes_written_)) = num;
+  bytes_written_ += sizeof(int16_t);
   return true;
 }
 
-bool DataWriter::WriteInt32(int32 num) {
-  if (sizeof(int32) > buf_len_ - bytes_written_)
+bool DataWriter::WriteInt32(int32_t num) {
+  if (sizeof(int32_t) > buf_len_ - bytes_written_)
     return false;
 
-  *(reinterpret_cast<int32*>(buffer_ + bytes_written_)) = num;
-  bytes_written_ += sizeof(int32);
+  *(reinterpret_cast<int32_t*>(buffer_ + bytes_written_)) = num;
+  bytes_written_ += sizeof(int32_t);
   return true;
 }
 

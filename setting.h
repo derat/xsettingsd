@@ -2,6 +2,7 @@
 #define __XSETTINGSD_SETTING_H__
 
 #include <map>
+#include <stdint.h>
 #include <string>
 
 #include "common.h"
@@ -18,7 +19,7 @@ class Setting {
     TYPE_COLOR   = 2,
   };
 
-  Setting(Type type)
+  explicit Setting(Type type)
       : type_(type),
         serial_(0) {
   }
@@ -52,12 +53,14 @@ class Setting {
   Type type_;
 
   // Incremented when the setting's value changes.
-  uint32 serial_;
+  uint32_t serial_;
+
+  DISALLOW_COPY_AND_ASSIGN(Setting);
 };
 
 class IntegerSetting : public Setting {
  public:
-  IntegerSetting(int32 value)
+  explicit IntegerSetting(int32_t value)
       : Setting(TYPE_INTEGER),
         value_(value) {
   }
@@ -66,12 +69,14 @@ class IntegerSetting : public Setting {
   bool WriteBody(DataWriter* writer) const;
   bool EqualsImpl(const Setting& other) const;
 
-  int32 value_;
+  int32_t value_;
+
+  DISALLOW_COPY_AND_ASSIGN(IntegerSetting);
 };
 
 class StringSetting : public Setting {
  public:
-  StringSetting(const std::string& value)
+  explicit StringSetting(const std::string& value)
       : Setting(TYPE_STRING),
         value_(value) {
   }
@@ -81,14 +86,16 @@ class StringSetting : public Setting {
   bool EqualsImpl(const Setting& other) const;
 
   std::string value_;
+
+  DISALLOW_COPY_AND_ASSIGN(StringSetting);
 };
 
 class ColorSetting : public Setting {
  public:
-  ColorSetting(uint16 red,
-               uint16 blue,
-               uint16 green,
-               uint16 alpha)
+  ColorSetting(uint16_t red,
+               uint16_t blue,
+               uint16_t green,
+               uint16_t alpha)
       : Setting(TYPE_COLOR),
         red_(red),
         blue_(blue),
@@ -100,16 +107,19 @@ class ColorSetting : public Setting {
   bool WriteBody(DataWriter* writer) const;
   bool EqualsImpl(const Setting& other) const;
 
-  uint16 red_;
-  uint16 blue_;
-  uint16 green_;
-  uint16 alpha_;
+  uint16_t red_;
+  uint16_t blue_;
+  uint16_t green_;
+  uint16_t alpha_;
+
+  DISALLOW_COPY_AND_ASSIGN(ColorSetting);
 };
 
 // A simple wrapper around a string-to-Setting map.
 // Handles deleting the Setting objects in its d'tor.
 class SettingsMap {
  public:
+  SettingsMap() {}
   ~SettingsMap();
 
   typedef std::map<std::string, Setting*> Map;
@@ -121,6 +131,8 @@ class SettingsMap {
 
  private:
   Map map_;
+
+  DISALLOW_COPY_AND_ASSIGN(SettingsMap);
 };
 
 }  // namespace xsettingsd

@@ -1,5 +1,7 @@
 #include <cassert>
 #include <map>
+#define __STDC_LIMIT_MACROS  // needed to get MAX and MIN macros from stdint.h
+#include <stdint.h>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -126,9 +128,9 @@ class ConfigParserTest : public testing::Test {
     RunReadInteger(input, &result, NULL);
     return result;
   }
-  int32 GetReadIntegerData(const string& input) {
+  int32_t GetReadIntegerData(const string& input) {
     bool result;
-    int32 data;
+    int32_t data;
     RunReadInteger(input, &result, &data);
     assert(result);
     return data;
@@ -151,7 +153,8 @@ class ConfigParserTest : public testing::Test {
   void RunReadSettingName(const string& input,
                           bool* result_out,
                           string* name_out) {
-    ConfigParser::CharStream* stream = new ConfigParser::StringCharStream(input);
+    ConfigParser::CharStream* stream =
+        new ConfigParser::StringCharStream(input);
     assert(stream->Init());
     ConfigParser parser(stream);
     string name;
@@ -164,11 +167,12 @@ class ConfigParserTest : public testing::Test {
 
   void RunReadInteger(const string& input,
                       bool* result_out,
-                      int32* num_out) {
-    ConfigParser::CharStream* stream = new ConfigParser::StringCharStream(input);
+                      int32_t* num_out) {
+    ConfigParser::CharStream* stream =
+        new ConfigParser::StringCharStream(input);
     assert(stream->Init());
     ConfigParser parser(stream);
-    int32 num;
+    int32_t num;
     bool result = parser.ReadInteger(&num);
     if (result_out)
       *result_out = result;
@@ -179,7 +183,8 @@ class ConfigParserTest : public testing::Test {
   void RunReadString(const string& input,
                      bool* result_out,
                      string* str_out) {
-    ConfigParser::CharStream* stream = new ConfigParser::StringCharStream(input);
+    ConfigParser::CharStream* stream =
+        new ConfigParser::StringCharStream(input);
     assert(stream->Init());
     ConfigParser parser(stream);
     string str;
@@ -216,16 +221,14 @@ TEST_F(ConfigParserTest, ReadSettingName) {
 }
 
 TEST_F(ConfigParserTest, ReadInteger) {
-  EXPECT_EQ(0,             GetReadIntegerData("0"));
-  EXPECT_EQ(10,            GetReadIntegerData("10"));
-  EXPECT_EQ(12,            GetReadIntegerData("0012"));
-  EXPECT_EQ(15,            GetReadIntegerData("15#2 comment"));
-  EXPECT_EQ(20,            GetReadIntegerData("20   "));
-  EXPECT_EQ(2147483647,    GetReadIntegerData("2147483647"));
-  EXPECT_EQ(-5,            GetReadIntegerData("-5"));
-  // See http://gcc.gnu.org/ml/gcc-bugs/2003-04/msg00082.html
-  // FIXME: http://groups.google.com/group/comp.lang.c++/browse_thread/thread/4f5ed69b31fd5e1e?pli=1
-  EXPECT_EQ(-2147483647-1, GetReadIntegerData("-2147483648"));
+  EXPECT_EQ(0,         GetReadIntegerData("0"));
+  EXPECT_EQ(10,        GetReadIntegerData("10"));
+  EXPECT_EQ(12,        GetReadIntegerData("0012"));
+  EXPECT_EQ(15,        GetReadIntegerData("15#2 comment"));
+  EXPECT_EQ(20,        GetReadIntegerData("20   "));
+  EXPECT_EQ(INT32_MAX, GetReadIntegerData("2147483647"));
+  EXPECT_EQ(-5,        GetReadIntegerData("-5"));
+  EXPECT_EQ(INT32_MIN, GetReadIntegerData("-2147483648"));
   EXPECT_FALSE(GetReadIntegerResult(""));
   EXPECT_FALSE(GetReadIntegerResult("-"));
   EXPECT_FALSE(GetReadIntegerResult("--2"));
@@ -251,21 +254,26 @@ TEST_F(ConfigParserTest, ReadString) {
 
 TEST_F(ConfigParserTest, Parse) {
   const char* good_input =
-      "IntSetting  3\n"
-      "StringSetting \"this is a string\"\n"
+      "Setting1  3\n"
+      "Setting2 \"this is a string\"\n"
       "# commented line\n"
-      "AnotherIntSetting 2  # trailing comment\n";
+      "\n"
+      "Setting3 2  # trailing comment\n";
   ConfigParser parser(new ConfigParser::StringCharStream(good_input));
   SettingsMap settings;
   ASSERT_TRUE(parser.Parse(&settings));
   ASSERT_EQ(3, settings.map().size());
 
-  const char* extra_name = "IntSetting 3 blah";
+  const char* extra_name = "SettingName 3 blah";
   parser.Reset(new ConfigParser::StringCharStream(extra_name));
   EXPECT_FALSE(parser.Parse(&settings));
 
-  const char* missing_value = "IntSetting";
+  const char* missing_value = "SettingName";
   parser.Reset(new ConfigParser::StringCharStream(missing_value));
+  EXPECT_FALSE(parser.Parse(&settings));
+
+  const char* comment_instead_of_value = "SettingName # test 3\n";
+  parser.Reset(new ConfigParser::StringCharStream(comment_instead_of_value));
   EXPECT_FALSE(parser.Parse(&settings));
 }
 
