@@ -1,3 +1,6 @@
+// Copyright 2009 Daniel Erat <dan@erat.org>
+// All rights reserved.
+
 #ifndef __XSETTINGSD_CONFIG_PARSER_H__
 #define __XSETTINGSD_CONFIG_PARSER_H__
 

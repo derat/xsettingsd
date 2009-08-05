@@ -1,3 +1,6 @@
+// Copyright 2009 Daniel Erat <dan@erat.org>
+// All rights reserved.
+
 #ifndef __XSETTINGSD_COMMON_H__
 #define __XSETTINGSD_COMMON_H__
 

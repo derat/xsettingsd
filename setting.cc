@@ -1,3 +1,6 @@
+// Copyright 2009 Daniel Erat <dan@erat.org>
+// All rights reserved.
+
 #include "setting.h"
 
 #include "data_writer.h"

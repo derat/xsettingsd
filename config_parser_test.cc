@@ -1,3 +1,6 @@
+// Copyright 2009 Daniel Erat <dan@erat.org>
+// All rights reserved.
+
 #include <cassert>
 #include <map>
 #define __STDC_LIMIT_MACROS  // needed to get MAX and MIN macros from stdint.h
