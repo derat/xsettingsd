@@ -41,7 +41,7 @@ class Setting {
   // Update this setting's serial number based on the previous version of
   // the setting.  (If the setting changed, we'll increment the serial;
   // otherwise we use the same serial as before.)
-  void UpdateSerial(Setting& prev);
+  void UpdateSerial(const Setting& prev);
 
  protected:
   // Swiped from xsettings-common.h in Owen Taylor's reference
@@ -73,6 +73,8 @@ class IntegerSetting : public Setting {
         value_(value) {
   }
 
+  int32_t value() const { return value_; }
+
  private:
 #ifdef __TESTING
   friend class IntegerSettingTest;
@@ -93,6 +95,8 @@ class StringSetting : public Setting {
       : Setting(TYPE_STRING),
         value_(value) {
   }
+
+  const std::string& value() const { return value_; }
 
  private:
   bool WriteBody(DataWriter* writer) const;
@@ -116,6 +120,11 @@ class ColorSetting : public Setting {
         alpha_(alpha) {
   }
 
+  uint16_t red() const { return red_; }
+  uint16_t blue() const { return blue_; }
+  uint16_t green() const { return green_; }
+  uint16_t alpha() const { return alpha_; }
+
  private:
   bool WriteBody(DataWriter* writer) const;
   bool EqualsImpl(const Setting& other) const;
@@ -138,6 +147,9 @@ class SettingsMap {
   typedef std::map<std::string, Setting*> Map;
   const Map& map() const { return map_; }
   Map* mutable_map() { return &map_; }
+
+  // Get a pointer to a setting or NULL if it doesn't exist.
+  const Setting* GetSetting(const std::string& name) const;
 
   // Update settings' serial numbers based on the previous map.
   void SetSerials(const SettingsMap& prev_map);

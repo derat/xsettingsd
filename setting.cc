@@ -26,7 +26,7 @@ bool Setting::Write(const string& name, DataWriter* writer) const {
   return WriteBody(writer);
 }
 
-void Setting::UpdateSerial(Setting& prev) {
+void Setting::UpdateSerial(const Setting& prev) {
   serial_ = prev.serial_;
   if (!operator==(prev))
     serial_++;
@@ -83,12 +83,19 @@ SettingsMap::~SettingsMap() {
   map_.clear();
 }
 
+const Setting* SettingsMap::GetSetting(const std::string& name) const {
+  Map::const_iterator it = map_.find(name);
+  if (it == map_.end())
+    return NULL;
+  return it->second;
+}
+
 void SettingsMap::SetSerials(const SettingsMap& prev_map) {
   for (Map::iterator it = map_.begin(); it != map_.end(); ++it) {
-    Map::const_iterator prev_it = prev_map.map().find(it->first);
-    if (prev_it == prev_map.map().end())
+    const Setting* prev_setting = prev_map.GetSetting(it->first);
+    if (!prev_setting)
       continue;
-    it->second->UpdateSerial(*(prev_it->second));
+    it->second->UpdateSerial(*prev_setting);
   }
 }
 

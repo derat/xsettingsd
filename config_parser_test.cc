@@ -255,17 +255,87 @@ TEST_F(ConfigParserTest, ReadString) {
   EXPECT_FALSE(GetReadStringResult("\"\n\""));
 }
 
+testing::AssertionResult IntegerSettingEquals(
+    const char* expected_expr,
+    const char* actual_expr,
+    int32_t expected,
+    const Setting* actual) {
+  if (!actual) {
+    testing::Message msg;
+    msg << "Expected: " << expected << "\n"
+        << "  Actual: " << actual_expr << " is NULL";
+    return testing::AssertionFailure(msg);
+  }
+
+  const IntegerSetting *setting = dynamic_cast<const IntegerSetting*>(actual);
+  if (!setting) {
+    testing::Message msg;
+    msg << "Expected: " << expected << "\n"
+        << "  Actual: " << actual_expr << " (not an IntegerSetting)";
+    return testing::AssertionFailure(msg);
+  }
+
+  if (setting->value() != expected) {
+    testing::Message msg;
+    msg << "Expected: " << expected << "\n"
+        << "  Actual: " << actual_expr << " contains " << setting->value();
+    return testing::AssertionFailure(msg);
+  }
+
+  return testing::AssertionSuccess();
+}
+
+testing::AssertionResult StringSettingEquals(
+    const char* expected_expr,
+    const char* actual_expr,
+    const string& expected,
+    const Setting* actual) {
+  if (!actual) {
+    testing::Message msg;
+    msg << "Expected: " << expected << "\n"
+        << "  Actual: " << actual_expr << " is NULL";
+    return testing::AssertionFailure(msg);
+  }
+
+  const StringSetting *setting = dynamic_cast<const StringSetting*>(actual);
+  if (!setting) {
+    testing::Message msg;
+    msg << "Expected: " << expected << "\n"
+        << "  Actual: " << actual_expr << " (not a StringSetting)";
+    return testing::AssertionFailure(msg);
+  }
+
+  if (setting->value() != expected) {
+    testing::Message msg;
+    msg << "Expected: \"" << expected << "\"\n"
+        << "  Actual: " << actual_expr << " contains \""
+        << setting->value() << "\"";
+    return testing::AssertionFailure(msg);
+  }
+
+  return testing::AssertionSuccess();
+}
+
 TEST_F(ConfigParserTest, Parse) {
   const char* good_input =
-      "Setting1  3\n"
+      "Setting1  5\n"
       "Setting2 \"this is a string\"\n"
       "# commented line\n"
       "\n"
-      "Setting3 2  # trailing comment\n";
+      "Setting3 2  # trailing comment\n"
+      "Setting4 \"\\\"quoted\\\"\"# comment";
   ConfigParser parser(new ConfigParser::StringCharStream(good_input));
   SettingsMap settings;
   ASSERT_TRUE(parser.Parse(&settings));
-  ASSERT_EQ(3, settings.map().size());
+  ASSERT_EQ(4, settings.map().size());
+  EXPECT_PRED_FORMAT2(IntegerSettingEquals, 5, settings.GetSetting("Setting1"));
+  EXPECT_PRED_FORMAT2(StringSettingEquals,
+                      "this is a string",
+                      settings.GetSetting("Setting2"));
+  EXPECT_PRED_FORMAT2(IntegerSettingEquals, 2, settings.GetSetting("Setting3"));
+  EXPECT_PRED_FORMAT2(StringSettingEquals,
+                      "\"quoted\"",
+                      settings.GetSetting("Setting4"));
 
   const char* extra_name = "SettingName 3 blah";
   parser.Reset(new ConfigParser::StringCharStream(extra_name));
@@ -277,6 +347,10 @@ TEST_F(ConfigParserTest, Parse) {
 
   const char* comment_instead_of_value = "SettingName # test 3\n";
   parser.Reset(new ConfigParser::StringCharStream(comment_instead_of_value));
+  EXPECT_FALSE(parser.Parse(&settings));
+
+  const char* duplicate_name = "SettingName 4\nSettingName 3";
+  parser.Reset(new ConfigParser::StringCharStream(duplicate_name));
   EXPECT_FALSE(parser.Parse(&settings));
 }
 
