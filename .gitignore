@@ -1,4 +1,5 @@
 .*.swp
+.sconsign.dblite
 xsettingsd
 *.o
 *_test
