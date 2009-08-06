@@ -43,20 +43,46 @@ testing::AssertionResult BytesAreEqual(
   return testing::AssertionSuccess();
 }
 
-TEST(IntegerSettingTest, WriteBody) {
+TEST(IntegerSettingTest, Write) {
   static const int kBufSize = 1024;
   char buffer[kBufSize];
 
   DataWriter writer(buffer, kBufSize);
   IntegerSetting setting(5);
+  setting.UpdateSerial(NULL, 3);
   ASSERT_TRUE(setting.Write("name", &writer));
+  // TODO: Gotta fix a bunch of these for big-endian systems.
   const char expected[] = {
     0x0,                     // type
     0x0,                     // unused
-    0x4, 0x0,                // name-len  TODO: fix for big-endian
+    0x4, 0x0,                // name-len
     0x6e, 0x61, 0x6d, 0x65,  // "name" (multiple of 4, so no padding)
-    0x0, 0x0, 0x0, 0x0,      // serial
-    0x5, 0x0, 0x0, 0x0,      // value  TODO: fix for big-endian
+    0x3, 0x0, 0x0, 0x0,      // serial
+    0x5, 0x0, 0x0, 0x0,      // value
+  };
+  ASSERT_EQ(sizeof(expected), writer.bytes_written());
+  EXPECT_PRED_FORMAT3(BytesAreEqual, expected, buffer, sizeof(expected));
+}
+
+TEST(StringSettingTest, Write) {
+  static const int kBufSize = 1024;
+  char buffer[kBufSize];
+
+  DataWriter writer(buffer, kBufSize);
+  StringSetting setting("testing");
+  setting.UpdateSerial(NULL, 5);
+  ASSERT_TRUE(setting.Write("setting", &writer));
+  // TODO: Gotta fix a bunch of these for big-endian systems.
+  const char expected[] = {
+    0x1,                     // type
+    0x0,                     // unused
+    0x7, 0x0,                // name-len
+    0x73, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67,  // "setting" (name)
+    0x0,                     // padding
+    0x5, 0x0, 0x0, 0x0,      // serial
+    0x7, 0x0, 0x0, 0x0,      // value-len
+    0x74, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x67,  // "testing" (value)
+    0x0,                     // padding
   };
   ASSERT_EQ(sizeof(expected), writer.bytes_written());
   EXPECT_PRED_FORMAT3(BytesAreEqual, expected, buffer, sizeof(expected));
