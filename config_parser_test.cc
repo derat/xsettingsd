@@ -328,7 +328,7 @@ TEST_F(ConfigParserTest, Parse) {
   SettingsMap settings;
   ASSERT_TRUE(parser.Parse(&settings, NULL, 0));
   ASSERT_EQ(4, settings.map().size());
-  EXPECT_PRED_FORMAT2(IntegerSettingEquals, 4, settings.GetSetting("Setting1"));
+  EXPECT_PRED_FORMAT2(IntegerSettingEquals, 5, settings.GetSetting("Setting1"));
   EXPECT_PRED_FORMAT2(StringSettingEquals,
                       "this is a string",
                       settings.GetSetting("Setting2"));

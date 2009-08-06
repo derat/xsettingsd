@@ -62,6 +62,25 @@ TEST(IntegerSettingTest, WriteBody) {
   EXPECT_PRED_FORMAT3(BytesAreEqual, expected, buffer, sizeof(expected));
 }
 
+TEST(SettingTest, Serials) {
+  // Create a setting and give it a serial of 3.
+  IntegerSetting setting(4);
+  setting.UpdateSerial(NULL, 3);
+  EXPECT_EQ(3, setting.serial());
+
+  // Now create a new setting with a different value.
+  // It should get a new serial number.
+  IntegerSetting setting2(5);
+  setting2.UpdateSerial(&setting, 4);
+  EXPECT_EQ(4, setting2.serial());
+
+  // Create a new setting with the same value.
+  // The serial should stay the same as before.
+  IntegerSetting setting3(5);
+  setting3.UpdateSerial(&setting2, 5);
+  EXPECT_EQ(4, setting3.serial());
+}
+
 }  // namespace xsettingsd
 
 int main(int argc, char** argv) {
