@@ -16,15 +16,19 @@ class Setting;
 
 class SettingsManager {
  public:
-  SettingsManager(const std::string& config_filename);
+  SettingsManager();
+
+  // Load settings from 'filename'.  If the load was unsuccessful, false is
+  // returned and an error is printed to stderr.
+  bool LoadConfig(const std::string& filename);
 
   bool UpdateProperty();
 
  private:
-  std::string config_filename_;
-
+  // Currently-loaded settings.
   SettingsMap settings_;
 
+  // Current serial number.
   uint32_t serial_;
 
   DISALLOW_COPY_AND_ASSIGN(SettingsManager);

@@ -150,6 +150,8 @@ class SettingsMap {
   const Map& map() const { return map_; }
   Map* mutable_map() { return &map_; }
 
+  void swap(SettingsMap* other) { map_.swap(other->map_); }
+
   // Get a pointer to a setting or NULL if it doesn't exist.
   const Setting* GetSetting(const std::string& name) const;
 

@@ -16,4 +16,6 @@ std::string StringPrintf(const char* format, ...) {
   return std::string(buffer);
 }
 
+const char* kProgName = "xsettingsd";
+
 }  // namespace xsettingsd

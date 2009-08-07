@@ -27,7 +27,7 @@ TEST(CharStreamTest, Basic) {
   ASSERT_DEATH(stream.UngetChar('0'), "initialized");
 
   // Now read a character, put it back, and read it again.
-  ASSERT_TRUE(stream.Init());
+  ASSERT_TRUE(stream.Init(NULL));
   EXPECT_FALSE(stream.AtEOF());
   EXPECT_EQ('0', stream.GetChar());
   stream.UngetChar('0');
@@ -54,7 +54,7 @@ TEST(CharStreamTest, LineNumbers) {
   ConfigParser::StringCharStream stream("a\nb\n\nc");
 
   // We use line 0 to represent not having read any characters yet.
-  ASSERT_TRUE(stream.Init());
+  ASSERT_TRUE(stream.Init(NULL));
   EXPECT_EQ(0, stream.line_num());
 
   // Getting the first 'a' should put us on line 1.  We move back to 0 when
@@ -158,7 +158,7 @@ class ConfigParserTest : public testing::Test {
                           string* name_out) {
     ConfigParser::CharStream* stream =
         new ConfigParser::StringCharStream(input);
-    assert(stream->Init());
+    assert(stream->Init(NULL));
     ConfigParser parser(stream);
     string name;
     bool result = parser.ReadSettingName(&name);
@@ -173,7 +173,7 @@ class ConfigParserTest : public testing::Test {
                       int32_t* num_out) {
     ConfigParser::CharStream* stream =
         new ConfigParser::StringCharStream(input);
-    assert(stream->Init());
+    assert(stream->Init(NULL));
     ConfigParser parser(stream);
     int32_t num;
     bool result = parser.ReadInteger(&num);
@@ -188,7 +188,7 @@ class ConfigParserTest : public testing::Test {
                      string* str_out) {
     ConfigParser::CharStream* stream =
         new ConfigParser::StringCharStream(input);
-    assert(stream->Init());
+    assert(stream->Init(NULL));
     ConfigParser parser(stream);
     string str;
     bool result = parser.ReadString(&str);

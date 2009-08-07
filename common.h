@@ -14,6 +14,8 @@ namespace xsettingsd {
 
 std::string StringPrintf(const char* format, ...);
 
+extern const char* kProgName;
+
 }  // namespace xsettingsd
 
 #endif

@@ -3,6 +3,7 @@
 
 #include "settings_manager.h"
 
+#include "config_parser.h"
 #include "data_writer.h"
 #include "setting.h"
 
@@ -12,9 +13,21 @@ using std::string;
 
 namespace xsettingsd {
 
-SettingsManager::SettingsManager(const string& config_filename)
-    : config_filename_(config_filename),
-      serial_(0) {
+SettingsManager::SettingsManager()
+    : serial_(0) {
+}
+
+bool SettingsManager::LoadConfig(const string& filename) {
+  ConfigParser parser(new ConfigParser::FileCharStream(filename));
+  SettingsMap new_settings;
+  if (!parser.Parse(&new_settings, &settings_, serial_ + 1)) {
+    fprintf(stderr, "%s: Unable to parse %s: %s\n",
+            kProgName, filename.c_str(), parser.FormatError().c_str());
+    return false;
+  }
+  serial_++;
+  settings_.swap(&new_settings);
+  return true;
 }
 
 #if 0

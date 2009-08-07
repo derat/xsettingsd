@@ -27,11 +27,17 @@ class ConfigParser {
   explicit ConfigParser(CharStream* stream);
   ~ConfigParser();
 
-  int error_line_num() const { return error_line_num_; };
-  const std::string& error_str() const { return error_str_; }
+  // Returns a formatted string describing a parse error.  Can be called
+  // after Parse() returns false.
+  std::string FormatError() const;
 
+  // Reset the parser to read from a new stream.
   void Reset(CharStream* stream);
 
+  // Parse the data in the stream into 'settings', using 'prev_settings'
+  // (pass the previous version if it exists or NULL otherwise) and
+  // 'serial' (the new serial number) to determine which serial number each
+  // setting should have.
   bool Parse(SettingsMap* settings,
              const SettingsMap* prev_settings,
              uint32_t serial);
@@ -53,10 +59,10 @@ class ConfigParser {
 
     // Must be called before using the stream.
     // The stream is unusable if false is returned.
-    bool Init();
+    bool Init(std::string* error_out);
 
     // Are we currently at the end of the stream?
-    bool AtEOF() const;
+    bool AtEOF();
 
     // Get the next character in the stream.
     char GetChar();
@@ -66,8 +72,8 @@ class ConfigParser {
     void UngetChar(char ch);
 
    private:
-    virtual bool InitImpl() { return true; }
-    virtual bool AtEOFImpl() const = 0;
+    virtual bool InitImpl(std::string* error_out) { return true; }
+    virtual bool AtEOFImpl() = 0;
     virtual char GetCharImpl() = 0;
 
     // Has Init() been called?
@@ -97,8 +103,8 @@ class ConfigParser {
     ~FileCharStream();
 
    private:
-    bool InitImpl();
-    bool AtEOFImpl() const;
+    bool InitImpl(std::string* error_out);
+    bool AtEOFImpl();
     char GetCharImpl();
 
     std::string filename_;
@@ -113,7 +119,7 @@ class ConfigParser {
     StringCharStream(const std::string& data);
 
    private:
-    bool AtEOFImpl() const;
+    bool AtEOFImpl();
     char GetCharImpl();
 
     std::string data_;
@@ -148,10 +154,16 @@ class ConfigParser {
   bool ReadColor(uint16_t* red_out, uint16_t* blue_out,
                  uint16_t* green_out, uint16_t* alpha_out);
 
+  // Record an error to 'error_str_', also saving the stream's current line
+  // number to 'error_line_num_'.
   void SetErrorF(const char* format, ...);
 
+  // Stream from which the config is being parsed.
   CharStream* stream_;
 
+  // If an error was encountered while parsing, the line number where
+  // it happened and a string describing it.  Line 0 is used for errors
+  // occuring before making any progress into the file.
   int error_line_num_;
   std::string error_str_;
 

@@ -25,6 +25,12 @@ ConfigParser::~ConfigParser() {
   delete stream_;
 }
 
+string ConfigParser::FormatError() const {
+  if (error_line_num_ == 0)
+    return error_str_;
+  return StringPrintf("%d: %s", error_line_num_, error_str_.c_str());
+}
+
 void ConfigParser::Reset(CharStream* stream) {
   assert(stream);
   delete stream_;
@@ -40,8 +46,9 @@ bool ConfigParser::Parse(SettingsMap* settings,
   assert(settings);
   settings->mutable_map()->clear();
 
-  if (!stream_->Init()) {
-    SetErrorF("Unable to initialize stream");
+  string stream_error;
+  if (!stream_->Init(&stream_error)) {
+    SetErrorF("Couldn't init stream (%s)", stream_error.c_str());
     return false;
   }
 
@@ -117,13 +124,13 @@ bool ConfigParser::Parse(SettingsMap* settings,
   return true;
 }
 
-bool ConfigParser::CharStream::Init() {
+bool ConfigParser::CharStream::Init(string* error_out) {
   assert(!initialized_);
   initialized_ = true;
-  return InitImpl();
+  return InitImpl(error_out);
 }
 
-bool ConfigParser::CharStream::AtEOF() const {
+bool ConfigParser::CharStream::AtEOF() {
   assert(initialized_);
   return (!have_buffered_char_ && AtEOFImpl());
 }
@@ -174,26 +181,27 @@ ConfigParser::FileCharStream::~FileCharStream() {
   }
 }
 
-bool ConfigParser::FileCharStream::InitImpl() {
+bool ConfigParser::FileCharStream::InitImpl(string* error_out) {
   assert(!file_);
   file_ = fopen(filename_.c_str(), "r");
   if (!file_) {
-    fprintf(stderr, "Unable to open %s: %s\n", filename_.c_str(),
-            strerror(errno));
+    if (error_out)
+      *error_out = strerror(errno);
     return false;
   }
   return true;
 }
 
-bool ConfigParser::FileCharStream::AtEOFImpl() const {
+bool ConfigParser::FileCharStream::AtEOFImpl() {
   assert(file_);
-  return feof(file_);
+  int ch = GetChar();
+  UngetChar(ch);
+  return ch == EOF;
 }
 
 char ConfigParser::FileCharStream::GetCharImpl() {
   assert(file_);
   int ch = fgetc(file_);
-  assert(ch != EOF);
   return ch;
 }
 
@@ -202,7 +210,7 @@ ConfigParser::StringCharStream::StringCharStream(const string& data)
       pos_(0) {
 }
 
-bool ConfigParser::StringCharStream::AtEOFImpl() const {
+bool ConfigParser::StringCharStream::AtEOFImpl() {
   return pos_ == data_.size();
 }
 
@@ -270,6 +278,11 @@ bool ConfigParser::ReadSettingName(string* name_out) {
 bool ConfigParser::ReadValue(Setting** setting_ptr) {
   assert(setting_ptr);
   *setting_ptr = NULL;
+
+  if (stream_->AtEOF()) {
+    SetErrorF("Got EOF when starting to read value");
+    return false;
+  }
 
   char ch = stream_->GetChar();
   stream_->UngetChar(ch);
