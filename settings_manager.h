@@ -35,8 +35,11 @@ class SettingsManager {
   void RunEventLoop();
 
  private:
-  // Update the settings property on 'win_'.
-  bool UpdateProperty();
+  // Create and initialize a window.
+  Window CreateWindow();
+
+  // Update the settings property on the passed-in window.
+  bool UpdateProperty(Window win);
 
   // Currently-loaded settings.
   SettingsMap settings_;

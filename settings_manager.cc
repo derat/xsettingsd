@@ -5,6 +5,10 @@
 
 #include <cassert>
 #include <cstring>
+#include <sys/types.h>
+#include <unistd.h>
+#include <X11/Xatom.h>
+#include <X11/Xutil.h>
 
 #include "config_parser.h"
 #include "data_writer.h"
@@ -67,30 +71,14 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
     return false;
   }
 
-  XSetWindowAttributes attr;
-  attr.override_redirect = True;
-  win_ = XCreateWindow(display_,
-                       root_,               // parent
-                       -1, -1,              // x, y
-                       1, 1,                // width, height
-                       0,                   // border_width
-                       CopyFromParent,      // depth
-                       InputOutput,         // class
-                       CopyFromParent,      // visual
-                       CWOverrideRedirect,  // attr_mask
-                       &attr);
+  win_ = CreateWindow();
+  if (win_ == None) {
+    fprintf(stderr, "Unable to create window\n");
+    return false;
+  }
   fprintf(stderr, "Created window 0x%x\n", static_cast<unsigned int>(win_));
-  XStoreName(display_, win_, kProgName);
-  XChangeProperty(display_,
-                  win_,
-                  XInternAtom(display_, "_NET_WM_NAME", False),  // property
-                  XInternAtom(display_, "UTF8_STRING", False),   // type
-                  8,  // format (bits per element)
-                  PropModeReplace,
-                  reinterpret_cast<const unsigned char*>(kProgName),
-                  strlen(kProgName));
 
-  if (!UpdateProperty()) {
+  if (!UpdateProperty(win_)) {
     fprintf(stderr, "Unable to update settings property on window\n");
     return false;
   }
@@ -168,7 +156,55 @@ void SettingsManager::RunEventLoop() {
   }
 }
 
-bool SettingsManager::UpdateProperty() {
+Window SettingsManager::CreateWindow() {
+  XSetWindowAttributes attr;
+  attr.override_redirect = True;
+  Window win = XCreateWindow(display_,
+                             root_,               // parent
+                             -1, -1,              // x, y
+                             1, 1,                // width, height
+                             0,                   // border_width
+                             CopyFromParent,      // depth
+                             InputOutput,         // class
+                             CopyFromParent,      // visual
+                             CWOverrideRedirect,  // attr_mask
+                             &attr);
+
+  // This sets a few properties for us, including WM_CLIENT_MACHINE.
+  XSetWMProperties(display_,
+                   win,
+                   NULL,   // window_name
+                   NULL,   // icon_name
+                   NULL,   // argv
+                   0,      // argc
+                   NULL,   // normal_hints
+                   NULL,   // wm_hints
+                   NULL);  // class_hints
+
+  XStoreName(display_, win, kProgName);
+  XChangeProperty(display_,
+                  win,
+                  XInternAtom(display_, "_NET_WM_NAME", False),  // property
+                  XInternAtom(display_, "UTF8_STRING", False),   // type
+                  8,  // format (bits per element)
+                  PropModeReplace,
+                  reinterpret_cast<const unsigned char*>(kProgName),
+                  strlen(kProgName));
+
+  pid_t pid = getpid();
+  XChangeProperty(display_,
+                  win,
+                  XInternAtom(display_, "_NET_WM_PID", False),  // property
+                  XA_CARDINAL,  // type
+                  32,           // format (bits per element)
+                  PropModeReplace,
+                  reinterpret_cast<const unsigned char*>(&pid), // value
+                  1);           // num elements
+
+  return win;
+}
+
+bool SettingsManager::UpdateProperty(Window win) {
   static const int kBufferSize = 8192;
   char buffer[kBufferSize];
   DataWriter writer(buffer, sizeof(buffer));
@@ -187,7 +223,7 @@ bool SettingsManager::UpdateProperty() {
   }
 
   XChangeProperty(display_,
-                  win_,
+                  win,
                   atom_,  // property
                   atom_,  // type
                   8,      // format (bits per element)
