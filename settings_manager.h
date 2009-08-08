@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 #include <X11/Xlib.h>
 
@@ -25,21 +26,27 @@ class SettingsManager {
   // returned and an error is printed to stderr.
   bool LoadConfig(const std::string& filename);
 
-  // Connect to the X server, create our window, and take the selection.
-  // Returns false if someone else already has the selection unless
-  // 'replace_existing_manager' is set.
+  // Connect to the X server, create windows, updates their properties, and
+  // take the selections.  Returns false if someone else already has a
+  // selection unless 'replace_existing_manager' is set.
   bool InitX11(bool replace_existing_manager);
 
-  // Wait for events from the X server, exiting if we see someone else take
-  // the selection.
+  // Wait for events from the X server, destroying our windows and exiting
+  // if we see someone else take a selection.
   void RunEventLoop();
 
  private:
+  // Destroy all windows in 'windows_'.
+  void DestroyWindows();
+
   // Create and initialize a window.
-  Window CreateWindow();
+  Window CreateWindow(int screen);
 
   // Update the settings property on the passed-in window.
   bool UpdateProperty(Window win);
+
+  // Manage XSETTINGS for a particular screen.
+  bool ManageScreen(int screen, Window win, bool replace_existing_manager);
 
   // Currently-loaded settings.
   SettingsMap settings_;
@@ -47,11 +54,15 @@ class SettingsManager {
   // Current serial number.
   uint32_t serial_;
 
+  // Connection to the X server.
   Display* display_;
-  Window root_;
-  Atom sel_atom_;
+
+  // Atom representing "_XSETTINGS_SETTINGS".
   Atom prop_atom_;
-  Window win_;
+
+  // Windows that we've created to hold settings properties (one per
+  // screen).
+  std::vector<Window> windows_;
 
   DISALLOW_COPY_AND_ASSIGN(SettingsManager);
 };

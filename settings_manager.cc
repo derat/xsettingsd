@@ -17,20 +17,20 @@
 using std::make_pair;
 using std::map;
 using std::string;
+using std::vector;
 
 namespace xsettingsd {
 
 SettingsManager::SettingsManager()
     : serial_(0),
       display_(NULL),
-      root_(None),
-      sel_atom_(None),
-      prop_atom_(None),
-      win_(None) {
+      prop_atom_(None) {
 }
 
 SettingsManager::~SettingsManager() {
   if (display_) {
+    if (!windows_.empty())
+      DestroyWindows();
     XCloseDisplay(display_);
     display_ = NULL;
   }
@@ -56,72 +56,30 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
     fprintf(stderr, "%s: Unable to open connection to X server\n", kProgName);
     return false;
   }
-  root_ = DefaultRootWindow(display_);
 
-  // TODO: Handle multiple screens.
-  sel_atom_ = XInternAtom(display_, "_XSETTINGS_S0", False);
   prop_atom_ = XInternAtom(display_, "_XSETTINGS_SETTINGS", False);
 
-  XGrabServer(display_);
-  Window prev_win = XGetSelectionOwner(display_, sel_atom_);
-  fprintf(stderr, "Selection is owned by 0x%x\n",
-          static_cast<unsigned int>(prev_win));
-  if (prev_win != None && !replace_existing_manager) {
-    fprintf(stderr, "%s: Someone else already owns the _XSETTINGS_S0 selection "
-            "and we weren't asked to replace them\n", kProgName);
-    XUngrabServer(display_);
-    return false;
-  }
-
-  win_ = CreateWindow();
-  if (win_ == None) {
-    fprintf(stderr, "Unable to create window\n");
-    return false;
-  }
-  fprintf(stderr, "Created window 0x%x\n", static_cast<unsigned int>(win_));
-
-  if (!UpdateProperty(win_)) {
-    fprintf(stderr, "Unable to update settings property on window\n");
-    return false;
-  }
-
-  if (prev_win)
-    XSelectInput(display_, prev_win, StructureNotifyMask);
-  XSetSelectionOwner(display_, sel_atom_, win_, CurrentTime);
-  fprintf(stderr, "Took ownership of selection\n");
-  XUngrabServer(display_);
-
-  if (prev_win) {
-    // Wait for the previous owner to go away.
-    XEvent event;
-    while (true) {
-      XWindowEvent(display_, prev_win, StructureNotifyMask, &event);
-      if (event.type == DestroyNotify)
-        break;
+  for (int screen = 0; screen < ScreenCount(display_); ++screen) {
+    Window win = CreateWindow(screen);
+    if (win == None) {
+      fprintf(stderr, "%s: Unable to create window on screen %d\n",
+              kProgName, screen);
+      return false;
     }
-  }
+    fprintf(stderr, "%s: Created window 0x%x on screen %d\n",
+            kProgName, static_cast<unsigned int>(win), screen);
 
-  // Make sure that no one else took the selection while we were waiting.
-  if (XGetSelectionOwner(display_, sel_atom_) != win_) {
-    fprintf(stderr, "%s: Someone else took ownership of the _XSETTINGS_S0 "
-            "selection\n", kProgName);
-    return false;
-  }
+    if (!UpdateProperty(win)) {
+      fprintf(stderr, "%s: Unable to update settings property on window\n",
+              kProgName);
+      return false;
+    }
 
-  XEvent ev;
-  ev.xclient.type = ClientMessage;
-  ev.xclient.window = root_;
-  ev.xclient.message_type = XInternAtom(display_, "MANAGER", False);
-  ev.xclient.format = 32;
-  ev.xclient.data.l[0] = CurrentTime;  // FIXME
-  ev.xclient.data.l[1] = sel_atom_;
-  ev.xclient.data.l[2] = win_;
-  ev.xclient.data.l[3] = 0;
-  XSendEvent(display_,
-             root_,
-             False,                // propagate
-             StructureNotifyMask,  // event_mask
-             &ev);
+    if (!ManageScreen(screen, win, replace_existing_manager))
+      return false;
+
+    windows_.push_back(win);
+  }
 
   return true;
 }
@@ -137,18 +95,12 @@ void SettingsManager::RunEventLoop() {
         XRefreshKeyboardMapping(&(event.xmapping));
         break;
       case SelectionClear: {
-        const XSelectionClearEvent& e = event.xselectionclear;
-        if (e.selection == sel_atom_ && e.window == win_) {
-          // If someone else took the selection, that's our sign to leave.
-          XDestroyWindow(display_, win_);
-          win_ = None;
-          return;
-        }
-        fprintf(stderr, "%s: Ignoring SelectionClear event with atom 0x%x "
-                "and window 0x%x\n", kProgName,
-                static_cast<unsigned int>(e.selection),
-                static_cast<unsigned int>(e.window));
-        break;
+        // If someone else took the selection, that's our sign to leave.
+        fprintf(stderr, "%s: 0x%x took a selection from us; exiting\n",
+                kProgName,
+                static_cast<unsigned int>(event.xselectionclear.window));
+        DestroyWindows();
+        return;
       }
       default:
         fprintf(stderr, "%s: Ignoring event of type %d\n",
@@ -158,19 +110,33 @@ void SettingsManager::RunEventLoop() {
   }
 }
 
-Window SettingsManager::CreateWindow() {
+void SettingsManager::DestroyWindows() {
+  assert(display_);
+  for (vector<Window>::iterator it = windows_.begin();
+       it != windows_.end(); ++it) {
+    XDestroyWindow(display_, *it);
+  }
+  windows_.clear();
+}
+
+Window SettingsManager::CreateWindow(int screen) {
   XSetWindowAttributes attr;
   attr.override_redirect = True;
   Window win = XCreateWindow(display_,
-                             root_,               // parent
-                             -1, -1,              // x, y
-                             1, 1,                // width, height
-                             0,                   // border_width
-                             CopyFromParent,      // depth
-                             InputOutput,         // class
-                             CopyFromParent,      // visual
-                             CWOverrideRedirect,  // attr_mask
+                             RootWindow(display_, screen),  // parent
+                             -1, -1,                        // x, y
+                             1, 1,                          // width, height
+                             0,                             // border_width
+                             CopyFromParent,                // depth
+                             InputOutput,                   // class
+                             CopyFromParent,                // visual
+                             CWOverrideRedirect,            // attr_mask
                              &attr);
+  if (win == None) {
+    fprintf(stderr, "%s: Unable to create window on screen %d\n",
+            kProgName, screen);
+    return false;
+  }
 
   // This sets a few properties for us, including WM_CLIENT_MACHINE.
   XSetWMProperties(display_,
@@ -232,6 +198,73 @@ bool SettingsManager::UpdateProperty(Window win) {
                   PropModeReplace,
                   reinterpret_cast<unsigned char*>(buffer),
                   writer.bytes_written());
+  return true;
+}
+
+bool SettingsManager::ManageScreen(int screen,
+                                   Window win,
+                                   bool replace_existing_manager) {
+  assert(display_);
+  assert(win != None);
+  assert(screen < ScreenCount(display_));
+
+  Window root = RootWindow(display_, screen);
+
+  string sel_atom_name = StringPrintf("_XSETTINGS_S%d", screen);
+  Atom sel_atom = XInternAtom(display_, sel_atom_name.c_str(), False);
+
+  XGrabServer(display_);
+  Window prev_win = XGetSelectionOwner(display_, sel_atom);
+  fprintf(stderr, "%s: Selection %s is owned by 0x%x\n",
+          kProgName, sel_atom_name.c_str(),
+          static_cast<unsigned int>(prev_win));
+  if (prev_win != None && !replace_existing_manager) {
+    fprintf(stderr, "%s: Someone else already owns the %s selection "
+            "and we weren't asked to replace them\n",
+            kProgName, sel_atom_name.c_str());
+    XUngrabServer(display_);
+    return false;
+  }
+
+  if (prev_win)
+    XSelectInput(display_, prev_win, StructureNotifyMask);
+  XSetSelectionOwner(display_, sel_atom, win, CurrentTime);
+  fprintf(stderr, "%s: Took ownership of selection %s\n",
+          kProgName, sel_atom_name.c_str());
+  XUngrabServer(display_);
+
+  if (prev_win) {
+    // Wait for the previous owner to go away.
+    XEvent event;
+    while (true) {
+      XWindowEvent(display_, prev_win, StructureNotifyMask, &event);
+      if (event.type == DestroyNotify)
+        break;
+    }
+  }
+
+  // Make sure that no one else took the selection while we were waiting.
+  if (XGetSelectionOwner(display_, sel_atom) != win) {
+    fprintf(stderr, "%s: Someone else took ownership of the %s selection\n",
+            kProgName, sel_atom_name.c_str());
+    return false;
+  }
+
+  XEvent ev;
+  ev.xclient.type = ClientMessage;
+  ev.xclient.window = root;
+  ev.xclient.message_type = XInternAtom(display_, "MANAGER", False);
+  ev.xclient.format = 32;
+  ev.xclient.data.l[0] = CurrentTime;  // FIXME
+  ev.xclient.data.l[1] = sel_atom;
+  ev.xclient.data.l[2] = win;
+  ev.xclient.data.l[3] = 0;
+  XSendEvent(display_,
+             root,
+             False,                // propagate
+             StructureNotifyMask,  // event_mask
+             &ev);
+
   return true;
 }
 

@@ -39,7 +39,7 @@ daemon_env = Environment(
       'RunTests': run_tests_builder,
     },
     ENV=os.environ)
-daemon_env['CCFLAGS'] = '-Wall -Werror -g'
+daemon_env['CCFLAGS'] = '-Wall -Werror'
 
 
 srcs = Split('''\
