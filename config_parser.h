@@ -19,11 +19,15 @@ namespace xsettingsd {
 class Setting;
 class SettingsMap;
 
+// Doing the parsing by hand like this for a line-based config format is
+// pretty much the worst idea ever -- it would've been much easier to use
+// libpcrecpp. :-(  The tests all pass, though, for whatever that's worth.
 class ConfigParser {
  public:
   class CharStream;
 
-  // The parser takes ownership of 'stream'.
+  // The parser takes ownership of 'stream', which must be uninitialized
+  // (that is, its Init() method shouldn't have been called yet).
   explicit ConfigParser(CharStream* stream);
   ~ConfigParser();
 
@@ -37,7 +41,8 @@ class ConfigParser {
   // Parse the data in the stream into 'settings', using 'prev_settings'
   // (pass the previous version if it exists or NULL otherwise) and
   // 'serial' (the new serial number) to determine which serial number each
-  // setting should have.
+  // setting should have.  This method calls the stream's Init() method;
+  // don't do it beforehand.
   bool Parse(SettingsMap* settings,
              const SettingsMap* prev_settings,
              uint32_t serial);
