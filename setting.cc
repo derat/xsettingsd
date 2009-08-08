@@ -60,6 +60,7 @@ bool StringSetting::EqualsImpl(const Setting& other) const {
 }
 
 bool ColorSetting::WriteBody(DataWriter* writer) const {
+  // Note that XSETTINGS asks for RBG-order, not RGB.
   if (!writer->WriteInt16(red_))   return false;
   if (!writer->WriteInt16(blue_))  return false;
   if (!writer->WriteInt16(green_)) return false;
@@ -72,8 +73,8 @@ bool ColorSetting::EqualsImpl(const Setting& other) const {
   if (!cast_other)
     return false;
   return (cast_other->red_ == red_ &&
-          cast_other->blue_ == blue_ &&
           cast_other->green_ == green_ &&
+          cast_other->blue_ == blue_ &&
           cast_other->alpha_ == alpha_);
 }
 

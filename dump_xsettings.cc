@@ -168,6 +168,18 @@ bool DumpSetting(DataReader* reader) {
     }
     printf("%s \"%s\"\n", name.c_str(), escaped_value.c_str());
 
+  } else if (type == Setting::TYPE_COLOR) {
+    uint16_t red = 0, blue = 0, green = 0, alpha = 0;
+    if (!reader->ReadInt16(reinterpret_cast<int16_t*>(&red)) ||
+        !reader->ReadInt16(reinterpret_cast<int16_t*>(&blue)) ||
+        !reader->ReadInt16(reinterpret_cast<int16_t*>(&green)) ||
+        !reader->ReadInt16(reinterpret_cast<int16_t*>(&alpha))) {
+      fprintf(stderr, "Unable to read color values\n");
+      return false;
+    }
+    // Note that unlike the spec, our config uses RGB-order, not RBG.
+    printf("%s (%u, %u, %u, %u)\n", name.c_str(), red, green, blue, alpha);
+
   } else {
     assert(false);
   }

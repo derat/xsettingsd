@@ -105,19 +105,19 @@ class StringSetting : public Setting {
 class ColorSetting : public Setting {
  public:
   ColorSetting(uint16_t red,
-               uint16_t blue,
                uint16_t green,
+               uint16_t blue,
                uint16_t alpha)
       : Setting(TYPE_COLOR),
         red_(red),
-        blue_(blue),
         green_(green),
+        blue_(blue),
         alpha_(alpha) {
   }
 
   uint16_t red() const { return red_; }
-  uint16_t blue() const { return blue_; }
   uint16_t green() const { return green_; }
+  uint16_t blue() const { return blue_; }
   uint16_t alpha() const { return alpha_; }
 
  private:
@@ -125,8 +125,8 @@ class ColorSetting : public Setting {
   bool EqualsImpl(const Setting& other) const;
 
   uint16_t red_;
-  uint16_t blue_;
   uint16_t green_;
+  uint16_t blue_;
   uint16_t alpha_;
 
   DISALLOW_COPY_AND_ASSIGN(ColorSetting);

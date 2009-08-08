@@ -7,11 +7,13 @@
 #include <cerrno>
 #include <cstdarg>
 #include <cstring>
+#include <vector>
 
 #include "setting.h"
 
 using std::map;
 using std::string;
+using std::vector;
 
 namespace xsettingsd {
 
@@ -297,6 +299,11 @@ bool ConfigParser::ReadValue(Setting** setting_ptr) {
     if (!ReadString(&value))
       return false;
     *setting_ptr = new StringSetting(value);
+  } else if (ch == '(') {
+    uint16_t red, green, blue, alpha;
+    if (!ReadColor(&red, &green, &blue, &alpha))
+      return false;
+    *setting_ptr = new ColorSetting(red, green, blue, alpha);
   } else {
     SetErrorF("Got invalid setting value");
     return false;
@@ -399,6 +406,102 @@ bool ConfigParser::ReadString(string* str_out) {
     str_out->push_back(ch);
   }
 
+  return true;
+}
+
+bool ConfigParser::ReadColor(uint16_t* red_out,
+                             uint16_t* green_out,
+                             uint16_t* blue_out,
+                             uint16_t* alpha_out) {
+  assert(red_out);
+  assert(green_out);
+  assert(blue_out);
+  assert(alpha_out);
+
+  if (stream_->AtEOF() || stream_->GetChar() != '(') {
+    SetErrorF("Color is missing initial parethesis");
+    return false;
+  }
+
+  vector<uint16_t> nums;
+
+  enum State {
+    BEFORE_NUM,
+    IN_NUM,
+    AFTER_NUM,
+  };
+  int num = 0;
+
+  State state = BEFORE_NUM;
+  while (true) {
+    if (stream_->AtEOF()) {
+      SetErrorF("Got EOF mid-color");
+      return false;
+    }
+
+    char ch = stream_->GetChar();
+    if (ch == '\n') {
+      SetErrorF("Got newline mid-color");
+      return false;
+    }
+
+    if (ch == ')') {
+      if (state == BEFORE_NUM) {
+        SetErrorF("Expected number but got ')'");
+        return false;
+      }
+      if (state == IN_NUM)
+        nums.push_back(num);
+      break;
+    }
+
+    if (isspace(ch)) {
+      if (state == IN_NUM) {
+        state = AFTER_NUM;
+        nums.push_back(num);
+      }
+      continue;
+    }
+
+    if (ch == ',') {
+      if (state == BEFORE_NUM) {
+        SetErrorF("Got unexpected comma");
+        return false;
+      }
+      if (state == IN_NUM)
+        nums.push_back(num);
+      state = BEFORE_NUM;
+      continue;
+    }
+
+    if (!(ch >= '0' && ch <= '9')) {
+      SetErrorF("Got non-numeric character '%c'", ch);
+      return false;
+    }
+
+    if (state == AFTER_NUM) {
+      SetErrorF("Got unexpected digit '%c'", ch);
+      return false;
+    }
+    if (state == BEFORE_NUM) {
+      state = IN_NUM;
+      num = 0;
+    }
+    num = num * 10 + (ch - '0');
+
+    // TODO: Check for overflow.
+  }
+
+  if (nums.size() < 3 || nums.size() > 4) {
+    SetErrorF("Got %d number%s instead of 3 or 4",
+              nums.size(), (nums.size() == 1 ? "" : "s"));
+    return false;
+  }
+
+  *red_out = nums.at(0);
+  *green_out = nums.at(1);
+  *blue_out = nums.at(2);
+  *alpha_out = (nums.size() == 4) ? nums.at(3) : 65535;
   return true;
 }
 

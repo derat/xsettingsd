@@ -151,8 +151,10 @@ class ConfigParser {
   // stream.
   bool ReadString(std::string* str_out);
 
-  bool ReadColor(uint16_t* red_out, uint16_t* blue_out,
-                 uint16_t* green_out, uint16_t* alpha_out);
+  // Read a color of the form "(red, green, blue, alpha)" or "(red, green,
+  // blue)".
+  bool ReadColor(uint16_t* red_out, uint16_t* green_out,
+                 uint16_t* blue_out, uint16_t* alpha_out);
 
   // Record an error to 'error_str_', also saving the stream's current line
   // number to 'error_line_num_'.

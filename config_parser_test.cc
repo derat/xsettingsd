@@ -152,6 +152,19 @@ class ConfigParserTest : public testing::Test {
     return data;
   }
 
+  bool GetReadColorResult(const string& input) {
+    bool result;
+    RunReadColor(input, &result, NULL);
+    return result;
+  }
+  string GetReadColorData(const string& input) {
+    bool result;
+    string data;
+    RunReadColor(input, &result, &data);
+    assert(result);
+    return data;
+  }
+
  private:
   void RunReadSettingName(const string& input,
                           bool* result_out,
@@ -175,7 +188,7 @@ class ConfigParserTest : public testing::Test {
         new ConfigParser::StringCharStream(input);
     assert(stream->Init(NULL));
     ConfigParser parser(stream);
-    int32_t num;
+    int32_t num = 0;
     bool result = parser.ReadInteger(&num);
     if (result_out)
       *result_out = result;
@@ -196,6 +209,21 @@ class ConfigParserTest : public testing::Test {
       *result_out = result;
     if (str_out)
       *str_out = str;
+  }
+
+  void RunReadColor(const string& input,
+                    bool* result_out,
+                    string* str_out) {
+    ConfigParser::CharStream* stream =
+        new ConfigParser::StringCharStream(input);
+    assert(stream->Init(NULL));
+    ConfigParser parser(stream);
+    uint16_t red = 0, green = 0, blue = 0, alpha = 0;
+    bool result = parser.ReadColor(&red, &green, &blue, &alpha);
+    if (result_out)
+      *result_out = result;
+    if (str_out)
+      *str_out = StringPrintf("(%d,%d,%d,%d)", red, green, blue, alpha);
   }
 };
 
@@ -229,6 +257,7 @@ TEST_F(ConfigParserTest, ReadInteger) {
   EXPECT_EQ(12,        GetReadIntegerData("0012"));
   EXPECT_EQ(15,        GetReadIntegerData("15#2 comment"));
   EXPECT_EQ(20,        GetReadIntegerData("20   "));
+  EXPECT_EQ(30,        GetReadIntegerData("30\n"));
   EXPECT_EQ(INT32_MAX, GetReadIntegerData("2147483647"));
   EXPECT_EQ(-5,        GetReadIntegerData("-5"));
   EXPECT_EQ(INT32_MIN, GetReadIntegerData("-2147483648"));
@@ -253,6 +282,31 @@ TEST_F(ConfigParserTest, ReadString) {
   EXPECT_FALSE(GetReadStringResult("a"));
   EXPECT_FALSE(GetReadStringResult("\""));
   EXPECT_FALSE(GetReadStringResult("\"\n\""));
+}
+
+TEST_F(ConfigParserTest, ReadColor) {
+  EXPECT_EQ("(1,2,3,4)", GetReadColorData("(1,2,3,4)"));
+  EXPECT_EQ("(1,2,3,65535)", GetReadColorData("(1,2,3)"));
+  EXPECT_EQ("(32768,32769,32770,32771)",
+            GetReadColorData("(  32768 ,32769  , 32770, 32771  )"));
+  EXPECT_FALSE(GetReadColorResult(""));
+  EXPECT_FALSE(GetReadColorResult("("));
+  EXPECT_FALSE(GetReadColorResult(")"));
+  EXPECT_FALSE(GetReadColorResult("()"));
+  EXPECT_FALSE(GetReadColorResult("( )"));
+  EXPECT_FALSE(GetReadColorResult("(2)"));
+  EXPECT_FALSE(GetReadColorResult("(,2)"));
+  EXPECT_FALSE(GetReadColorResult("(2,)"));
+  EXPECT_FALSE(GetReadColorResult("(2,3)"));
+  EXPECT_FALSE(GetReadColorResult("(2,3,4,)"));
+  EXPECT_FALSE(GetReadColorResult("(2,3,,4)"));
+  EXPECT_FALSE(GetReadColorResult("(2,3,4,5,)"));
+  EXPECT_FALSE(GetReadColorResult("(2(,3,4,5)"));
+  EXPECT_FALSE(GetReadColorResult("(2,3,4,5,6)"));
+  EXPECT_FALSE(GetReadColorResult("(2a,3,4,5)"));
+  EXPECT_FALSE(GetReadColorResult("(2 1,3,4,5)"));
+  EXPECT_FALSE(GetReadColorResult("(2,3,4,5"));
+  EXPECT_FALSE(GetReadColorResult("(2,3\n,4,5)"));
 }
 
 testing::AssertionResult IntegerSettingEquals(
@@ -316,6 +370,40 @@ testing::AssertionResult StringSettingEquals(
   return testing::AssertionSuccess();
 }
 
+testing::AssertionResult ColorSettingEquals(
+    const char* expected_expr,
+    const char* actual_expr,
+    const string& expected_str,
+    const Setting* actual) {
+  if (!actual) {
+    testing::Message msg;
+    msg << "Expected: " << expected_str << "\n"
+        << "  Actual: " << actual_expr << " is NULL";
+    return testing::AssertionFailure(msg);
+  }
+
+  const ColorSetting *setting = dynamic_cast<const ColorSetting*>(actual);
+  if (!setting) {
+    testing::Message msg;
+    msg << "Expected: " << expected_str << "\n"
+        << "  Actual: " << actual_expr << " (not a ColorSetting)";
+    return testing::AssertionFailure(msg);
+  }
+
+  string actual_str = StringPrintf("(%d,%d,%d,%d)",
+                                   setting->red(), setting->green(),
+                                   setting->blue(), setting->alpha());
+  if (actual_str != expected_str) {
+    testing::Message msg;
+    msg << "Expected: \"" << expected_str << "\"\n"
+        << "  Actual: " << actual_expr << " contains \""
+        << actual_str << "\"";
+    return testing::AssertionFailure(msg);
+  }
+
+  return testing::AssertionSuccess();
+}
+
 TEST_F(ConfigParserTest, Parse) {
   const char* good_input =
       "Setting1  5\n"
@@ -323,11 +411,12 @@ TEST_F(ConfigParserTest, Parse) {
       "# commented line\n"
       "\n"
       "Setting3 2  # trailing comment\n"
-      "Setting4 \"\\\"quoted\\\"\"# comment";
+      "Setting4 \"\\\"quoted\\\"\"# comment\n"
+      "Setting5 (45,21, 5 , 8)# color";
   ConfigParser parser(new ConfigParser::StringCharStream(good_input));
   SettingsMap settings;
   ASSERT_TRUE(parser.Parse(&settings, NULL, 0));
-  ASSERT_EQ(4, settings.map().size());
+  ASSERT_EQ(5, settings.map().size());
   EXPECT_PRED_FORMAT2(IntegerSettingEquals, 5, settings.GetSetting("Setting1"));
   EXPECT_PRED_FORMAT2(StringSettingEquals,
                       "this is a string",
@@ -336,6 +425,9 @@ TEST_F(ConfigParserTest, Parse) {
   EXPECT_PRED_FORMAT2(StringSettingEquals,
                       "\"quoted\"",
                       settings.GetSetting("Setting4"));
+  EXPECT_PRED_FORMAT2(ColorSettingEquals,
+                      "(45,21,5,8)",
+                      settings.GetSetting("Setting5"));
 
   const char* extra_name = "SettingName 3 blah";
   parser.Reset(new ConfigParser::StringCharStream(extra_name));
