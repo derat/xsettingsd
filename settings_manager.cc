@@ -4,7 +4,10 @@
 #include "settings_manager.h"
 
 #include <cassert>
+#include <cerrno>
 #include <cstring>
+#include <fcntl.h>
+#include <sys/select.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <X11/Xatom.h>
@@ -16,13 +19,17 @@
 
 using std::make_pair;
 using std::map;
+using std::max;
 using std::string;
 using std::vector;
 
 namespace xsettingsd {
 
-SettingsManager::SettingsManager()
-    : serial_(0),
+static const int kMaxPropertySize = (2 << 15);
+
+SettingsManager::SettingsManager(const string& config_filename)
+    : config_filename_(config_filename),
+      serial_(0),
       display_(NULL),
       prop_atom_(None) {
 }
@@ -36,12 +43,12 @@ SettingsManager::~SettingsManager() {
   }
 }
 
-bool SettingsManager::LoadConfig(const string& filename) {
-  ConfigParser parser(new ConfigParser::FileCharStream(filename));
+bool SettingsManager::LoadConfig() {
+  ConfigParser parser(new ConfigParser::FileCharStream(config_filename_));
   SettingsMap new_settings;
   if (!parser.Parse(&new_settings, &settings_, serial_ + 1)) {
     fprintf(stderr, "%s: Unable to parse %s: %s\n",
-            kProgName, filename.c_str(), parser.FormatError().c_str());
+            kProgName, config_filename_.c_str(), parser.FormatError().c_str());
     return false;
   }
   serial_++;
@@ -59,6 +66,11 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
 
   prop_atom_ = XInternAtom(display_, "_XSETTINGS_SETTINGS", False);
 
+  char data[kMaxPropertySize];
+  DataWriter writer(data, kMaxPropertySize);
+  if (!WriteProperty(&writer))
+    return false;
+
   for (int screen = 0; screen < ScreenCount(display_); ++screen) {
     Window win = CreateWindow(screen);
     if (win == None) {
@@ -69,11 +81,7 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
     fprintf(stderr, "%s: Created window 0x%x on screen %d\n",
             kProgName, static_cast<unsigned int>(win), screen);
 
-    if (!UpdateProperty(win)) {
-      fprintf(stderr, "%s: Unable to update settings property on window\n",
-              kProgName);
-      return false;
-    }
+    SetPropertyOnWindow(win, data, writer.bytes_written());
 
     if (!ManageScreen(screen, win, replace_existing_manager))
       return false;
@@ -85,27 +93,61 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
 }
 
 void SettingsManager::RunEventLoop() {
-  while (true) {
-    XEvent event;
-    XNextEvent(display_, &event);
+  int x11_fd = XConnectionNumber(display_);
+  // TODO: Need to also use XAddConnectionWatch()?
 
-    switch (event.type) {
-      case MappingNotify:
-        // Doesn't really mean anything to us, but might as well handle it.
-        XRefreshKeyboardMapping(&(event.xmapping));
-        break;
-      case SelectionClear: {
-        // If someone else took the selection, that's our sign to leave.
-        fprintf(stderr, "%s: 0x%x took a selection from us; exiting\n",
-                kProgName,
-                static_cast<unsigned int>(event.xselectionclear.window));
-        DestroyWindows();
+  while (true) {
+    // Rather than blocking in XNextEvent(), we just read all the available
+    // events here.  We block in select() instead, so that we'll get EINTR
+    // if a SIGHUP came in to ask us to reload the config.
+    while (XPending(display_)) {
+      XEvent event;
+      XNextEvent(display_, &event);
+
+      switch (event.type) {
+        case MappingNotify:
+          // Doesn't really mean anything to us, but might as well handle it.
+          XRefreshKeyboardMapping(&(event.xmapping));
+          break;
+        case SelectionClear: {
+          // If someone else took the selection, that's our sign to leave.
+          fprintf(stderr, "%s: 0x%x took a selection from us; exiting\n",
+                  kProgName,
+                  static_cast<unsigned int>(event.xselectionclear.window));
+          DestroyWindows();
+          return;
+        }
+        default:
+          fprintf(stderr, "%s: Ignoring event of type %d\n",
+                  kProgName, event.type);
+      }
+    }
+
+    // TODO: There's a small race condition here, in that SIGHUP can come
+    // in while we're outside of the select() call, but it's probably not
+    // worth trying to work around.
+
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(x11_fd, &fds);
+    if (select(x11_fd + 1, &fds, NULL, NULL, NULL) == -1) {
+      if (errno != EINTR) {
+        fprintf(stderr, "%s: select() failed: %s\n",
+                kProgName, strerror(errno));
         return;
       }
-      default:
-        fprintf(stderr, "%s: Ignoring event of type %d\n",
-                kProgName, event.type);
-        break;
+
+      fprintf(stderr, "%s: Reloading configuration\n", kProgName);
+      if (!LoadConfig())
+        continue;
+
+      char data[kMaxPropertySize];
+      DataWriter writer(data, kMaxPropertySize);
+      if (!WriteProperty(&writer))
+        continue;
+
+      for (int screen = 0; screen < ScreenCount(display_); ++screen)
+        SetPropertyOnWindow(windows_.at(screen), data, writer.bytes_written());
     }
   }
 }
@@ -172,33 +214,33 @@ Window SettingsManager::CreateWindow(int screen) {
   return win;
 }
 
-bool SettingsManager::UpdateProperty(Window win) {
-  static const int kBufferSize = 8192;
-  char buffer[kBufferSize];
-  DataWriter writer(buffer, sizeof(buffer));
+bool SettingsManager::WriteProperty(DataWriter* writer) {
+  assert(writer);
 
   int byte_order = IsLittleEndian() ? LSBFirst : MSBFirst;
-
-  if (!writer.WriteInt8(byte_order))              return false;
-  if (!writer.WriteZeros(3))                      return false;
-  if (!writer.WriteInt32(serial_))                return false;
-  if (!writer.WriteInt32(settings_.map().size())) return false;
+  if (!writer->WriteInt8(byte_order))              return false;
+  if (!writer->WriteZeros(3))                      return false;
+  if (!writer->WriteInt32(serial_))                return false;
+  if (!writer->WriteInt32(settings_.map().size())) return false;
 
   for (SettingsMap::Map::const_iterator it = settings_.map().begin();
        it != settings_.map().end(); ++it) {
-    if (!it->second->Write(it->first, &writer))
+    if (!it->second->Write(it->first, writer))
       return false;
   }
+  return true;
+}
 
+void SettingsManager::SetPropertyOnWindow(
+    Window win, const char* data, size_t size) {
   XChangeProperty(display_,
                   win,
                   prop_atom_,  // property
                   prop_atom_,  // type
                   8,           // format (bits per element)
                   PropModeReplace,
-                  reinterpret_cast<unsigned char*>(buffer),
-                  writer.bytes_written());
-  return true;
+                  reinterpret_cast<const unsigned char*>(data),
+                  size);
 }
 
 bool SettingsManager::ManageScreen(int screen,

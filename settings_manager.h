@@ -15,16 +15,20 @@
 
 namespace xsettingsd {
 
-class Setting;
+class DataWriter;
 
+// SettingsManager is the central class responsible for loading and parsing
+// configs (via ConfigParser), storing them (in the form of Setting
+// objects), and setting them as properties on X11 windows.
 class SettingsManager {
  public:
-  SettingsManager();
+  SettingsManager(const std::string& config_filename);
   ~SettingsManager();
 
-  // Load settings from 'filename'.  If the load was unsuccessful, false is
+  // Load settings from 'config_filename_', updating 'settings_' and
+  // 'serial_' if successful.  If the load was unsuccessful, false is
   // returned and an error is printed to stderr.
-  bool LoadConfig(const std::string& filename);
+  bool LoadConfig();
 
   // Connect to the X server, create windows, updates their properties, and
   // take the selections.  Returns false if someone else already has a
@@ -42,11 +46,17 @@ class SettingsManager {
   // Create and initialize a window.
   Window CreateWindow(int screen);
 
+  // Write the currently-loaded property to the passed-in buffer.
+  bool WriteProperty(DataWriter* writer);
+
   // Update the settings property on the passed-in window.
-  bool UpdateProperty(Window win);
+  void SetPropertyOnWindow(Window win, const char* data, size_t size);
 
   // Manage XSETTINGS for a particular screen.
   bool ManageScreen(int screen, Window win, bool replace_existing_manager);
+
+  // File from which we load settings.
+  std::string config_filename_;
 
   // Currently-loaded settings.
   SettingsMap settings_;

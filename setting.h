@@ -18,6 +18,7 @@ namespace xsettingsd {
 
 class DataWriter;
 
+// Base class for settings.
 class Setting {
  public:
   enum Type {
