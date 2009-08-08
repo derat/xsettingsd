@@ -54,7 +54,7 @@ daemon_env['LIBS'] = libxsettingsd
 daemon_env.ParseConfig('pkg-config --cflags --libs x11')
 
 xsettingsd = daemon_env.Program('xsettingsd', 'xsettingsd.cc')
-dump_settings = daemon_env.Program('dump_settings', 'dump_settings.cc')
+dump_settings = daemon_env.Program('dump_xsettings', 'dump_xsettings.cc')
 
 Default([xsettingsd, dump_settings])
 
