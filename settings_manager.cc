@@ -144,7 +144,7 @@ void SettingsManager::RunEventLoop() {
     switch (event.type) {
       case MappingNotify:
         // Doesn't really mean anything to us, but might as well handle it.
-        XRefreshKeyboardMapping(&(event->xmapping));
+        XRefreshKeyboardMapping(&(event.xmapping));
         break;
       case SelectionClear: {
         const XSelectionClearEvent& e = event.xselectionclear;
@@ -173,8 +173,9 @@ bool SettingsManager::UpdateProperty() {
   char buffer[kBufferSize];
   DataWriter writer(buffer, sizeof(buffer));
 
-  // FIXME: First field is supposed to be byte-order.
-  if (!writer.WriteInt8(0))                       return false;
+  int byte_order = IsLittleEndian() ? LSBFirst : MSBFirst;
+
+  if (!writer.WriteInt8(byte_order))              return false;
   if (!writer.WriteZeros(3))                      return false;
   if (!writer.WriteInt32(serial_))                return false;
   if (!writer.WriteInt32(settings_.map().size())) return false;

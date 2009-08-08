@@ -13,6 +13,18 @@ using std::string;
 
 namespace xsettingsd {
 
+TEST(SettingTest, GetPadding) {
+  EXPECT_EQ(0, Setting::GetPadding(0, 4));
+  EXPECT_EQ(3, Setting::GetPadding(1, 4));
+  EXPECT_EQ(2, Setting::GetPadding(2, 4));
+  EXPECT_EQ(1, Setting::GetPadding(3, 4));
+  EXPECT_EQ(0, Setting::GetPadding(4, 4));
+  EXPECT_EQ(3, Setting::GetPadding(5, 4));
+  EXPECT_EQ(2, Setting::GetPadding(6, 4));
+  EXPECT_EQ(1, Setting::GetPadding(7, 4));
+  EXPECT_EQ(0, Setting::GetPadding(8, 4));
+}
+
 testing::AssertionResult BytesAreEqual(
     const char* expected_expr,
     const char* actual_expr,

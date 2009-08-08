@@ -46,11 +46,18 @@ class Setting {
   void UpdateSerial(const Setting* prev, uint32_t serial);
 
  protected:
-  // Swiped from xsettings-common.h in Owen Taylor's reference
-  // implementation.
-  static int GetPadding(int n, int m) {
-    return (m - (n % m)) % m;
-    //return ((n + m - 1) & (~(m - 1)));  // FIXME
+#ifdef __TESTING
+  friend class SettingTest;
+  FRIEND_TEST(SettingTest, GetPadding);
+#endif
+
+  static int GetPadding(int length, int increment) {
+    return (increment - (length % increment)) % increment;
+    // From xsettings-common.h in Owen Taylor's reference implementation --
+    // "n" is length and "m" is increment, I think.  This produces results
+    // that don't seem like padding, though: when "n" is 2 and "m" is 4, it
+    // produces 4.
+    //return ((n + m - 1) & (~(m - 1)));
   }
 
  private:

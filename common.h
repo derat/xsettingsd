@@ -14,6 +14,8 @@ namespace xsettingsd {
 
 std::string StringPrintf(const char* format, ...);
 
+bool IsLittleEndian();
+
 extern const char* kProgName;
 
 }  // namespace xsettingsd

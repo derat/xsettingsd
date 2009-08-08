@@ -16,6 +16,11 @@ std::string StringPrintf(const char* format, ...) {
   return std::string(buffer);
 }
 
+bool IsLittleEndian() {
+  int i = 1;
+  return reinterpret_cast<char*>(&i)[0];
+}
+
 const char* kProgName = "xsettingsd";
 
 }  // namespace xsettingsd
