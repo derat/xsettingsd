@@ -1,6 +1,6 @@
 .*.swp
 .sconsign.dblite
-dump_settings
+dump_xsettings
 xsettingsd
 *.[ao]
 *_test

@@ -9,6 +9,7 @@
 #include <X11/Xlib.h>
 
 #include "common.h"
+#include "data_reader.h"
 #include "setting.h"
 
 using std::min;
@@ -79,36 +80,13 @@ bool GetData(char* buffer, size_t buffer_size, size_t* data_size) {
   return true;
 }
 
-class DataReader {
- public:
-  DataReader(const char* data, size_t data_size)
-      : data_(data),
-        data_size_(data_size),
-        current_pos_(0) {
-  }
-
-  bool Read(string* str, size_t size) {
-    if (current_pos_ + size > data_size_)
-      return false;
-    if (str)
-      str->assign(data_ + current_pos_, size);
-    current_pos_ += size;
-    return true;
-  }
-
- private:
-  const char* data_;
-  size_t data_size_;
-  size_t current_pos_;
-};
-
 bool DumpSetting(DataReader* reader) {
-  string type_str;
-  if (!reader->Read(&type_str, 1)) {
+  int8_t type_byte = 0;
+  if (!reader->ReadInt8(&type_byte)) {
     fprintf(stderr, "Unable to read setting type\n");
     return false;
   }
-  Setting::Type type = static_cast<Setting::Type>(type_str[0]);
+  Setting::Type type = static_cast<Setting::Type>(type_byte);
 
   if (type != Setting::TYPE_INTEGER && type != Setting::TYPE_STRING) {
     // TODO: Handle colors.
@@ -116,63 +94,59 @@ bool DumpSetting(DataReader* reader) {
     return false;
   }
 
-  if (!reader->Read(NULL, 1)) {
+  if (!reader->ReadBytes(NULL, 1)) {
     fprintf(stderr, "Unable to read 1-byte setting padding\n");
     return false;
   }
 
-  string name_size_str;
-  if (!reader->Read(&name_size_str, 2)) {
+  uint16_t name_size = 0;
+  if (!reader->ReadInt16(reinterpret_cast<int16_t*>(&name_size))) {
     fprintf(stderr, "Unable to read setting name size\n");
     return false;
   }
-  uint16_t name_size = *reinterpret_cast<const uint16_t*>(name_size_str.data());
 
   string name;
-  if (!reader->Read(&name, name_size)) {
+  if (!reader->ReadBytes(&name, name_size)) {
     fprintf(stderr, "Unable to read %u-byte setting name\n", name_size);
     return false;
   }
 
   size_t name_padding = GetPadding(name_size, 4);
-  if (!reader->Read(NULL, name_padding)) {
+  if (!reader->ReadBytes(NULL, name_padding)) {
     fprintf(stderr, "Unable to read %d-byte setting name padding\n",
             name_padding);
     return false;
   }
 
-  if (!reader->Read(NULL, 4)) {
+  if (!reader->ReadBytes(NULL, 4)) {
     fprintf(stderr, "Unable to read setting serial number\n");
     return false;
   }
 
   if (type == Setting::TYPE_INTEGER) {
-    string value_str;
-    if (!reader->Read(&value_str, 4)) {
+    int32_t value = 0;
+    if (!reader->ReadInt32(&value)) {
       fprintf(stderr, "Unable to read integer setting value\n");
       return false;
     }
-    int32_t value = *reinterpret_cast<const int32_t*>(value_str.data());
     printf("%s %d\n", name.c_str(), value);
 
   } else if (type == Setting::TYPE_STRING) {
-    string value_size_str;
-    if (!reader->Read(&value_size_str, 4)) {
+    uint32_t value_size = 0;
+    if (!reader->ReadInt32(reinterpret_cast<int32_t*>(&value_size))) {
       fprintf(stderr, "Unable to read string setting value size\n");
       return false;
     }
-    uint32_t value_size =
-        *reinterpret_cast<const uint32_t*>(value_size_str.data());
 
     string value;
-    if (!reader->Read(&value, value_size)) {
+    if (!reader->ReadBytes(&value, value_size)) {
       fprintf(stderr, "Unable to read %u-byte string setting value\n",
               value_size);
       return false;
     }
 
     size_t value_padding = GetPadding(value_size, 4);
-    if (!reader->Read(NULL, value_padding)) {
+    if (!reader->ReadBytes(NULL, value_padding)) {
       fprintf(stderr, "Unable to read %d-byte string setting value padding\n",
               value_padding);
       return false;
@@ -205,31 +179,26 @@ bool DumpSettings(DataReader* reader) {
   int byte_order = IsLittleEndian() ? LSBFirst : MSBFirst;
 
   // Read 1-byte byte order.
-  string byte_order_str;
-  if (!reader->Read(&byte_order_str, 1)) {
+  int8_t prop_byte_order = 0;
+  if (!reader->ReadInt8(&prop_byte_order)) {
     fprintf(stderr, "Couldn't read byte order\n");
     return false;
   }
-  if (byte_order_str[0] != byte_order) {
-    // TODO: Handle properties written in other order.
-    fprintf(stderr, "Property byte order (%d) differed from our own (%d)\n",
-            byte_order_str[0], byte_order);
-    return false;
+  if (prop_byte_order != byte_order) {
+    reader->set_reverse_bytes(true);
   }
 
   // Read 3 bytes of padding and 4-byte serial.
-  if (!reader->Read(NULL, 7)) {
+  if (!reader->ReadBytes(NULL, 7)) {
     fprintf(stderr, "Unable to read header\n");
     return false;
   }
 
-  string num_settings_str;
-  if (!reader->Read(&num_settings_str, 4)) {
+  uint32_t num_settings = 0;
+  if (!reader->ReadInt32(reinterpret_cast<int32_t*>(&num_settings))) {
     fprintf(stderr, "Unable to read number of settings\n");
     return false;
   }
-  uint32_t num_settings =
-      *reinterpret_cast<const uint32_t*>(num_settings_str.data());
 
   for (uint32_t i = 0; i < num_settings; ++i) {
     if (!DumpSetting(reader))

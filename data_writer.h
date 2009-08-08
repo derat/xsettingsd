@@ -11,6 +11,7 @@
 
 namespace xsettingsd {
 
+// Provides an interface for writing different types of data to a buffer.
 class DataWriter {
  public:
   DataWriter(char* buffer, size_t buf_len);
