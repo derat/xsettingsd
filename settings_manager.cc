@@ -24,7 +24,8 @@ SettingsManager::SettingsManager()
     : serial_(0),
       display_(NULL),
       root_(None),
-      atom_(None),
+      sel_atom_(None),
+      prop_atom_(None),
       win_(None) {
 }
 
@@ -58,10 +59,11 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
   root_ = DefaultRootWindow(display_);
 
   // TODO: Handle multiple screens.
-  atom_ = XInternAtom(display_, "_XSETTINGS_S0", False);
+  sel_atom_ = XInternAtom(display_, "_XSETTINGS_S0", False);
+  prop_atom_ = XInternAtom(display_, "_XSETTINGS_SETTINGS", False);
 
   XGrabServer(display_);
-  Window prev_win = XGetSelectionOwner(display_, atom_);
+  Window prev_win = XGetSelectionOwner(display_, sel_atom_);
   fprintf(stderr, "Selection is owned by 0x%x\n",
           static_cast<unsigned int>(prev_win));
   if (prev_win != None && !replace_existing_manager) {
@@ -85,7 +87,7 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
 
   if (prev_win)
     XSelectInput(display_, prev_win, StructureNotifyMask);
-  XSetSelectionOwner(display_, atom_, win_, CurrentTime);
+  XSetSelectionOwner(display_, sel_atom_, win_, CurrentTime);
   fprintf(stderr, "Took ownership of selection\n");
   XUngrabServer(display_);
 
@@ -100,7 +102,7 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
   }
 
   // Make sure that no one else took the selection while we were waiting.
-  if (XGetSelectionOwner(display_, atom_) != win_) {
+  if (XGetSelectionOwner(display_, sel_atom_) != win_) {
     fprintf(stderr, "%s: Someone else took ownership of the _XSETTINGS_S0 "
             "selection\n", kProgName);
     return false;
@@ -112,7 +114,7 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
   ev.xclient.message_type = XInternAtom(display_, "MANAGER", False);
   ev.xclient.format = 32;
   ev.xclient.data.l[0] = CurrentTime;  // FIXME
-  ev.xclient.data.l[1] = atom_;
+  ev.xclient.data.l[1] = sel_atom_;
   ev.xclient.data.l[2] = win_;
   ev.xclient.data.l[3] = 0;
   XSendEvent(display_,
@@ -136,7 +138,7 @@ void SettingsManager::RunEventLoop() {
         break;
       case SelectionClear: {
         const XSelectionClearEvent& e = event.xselectionclear;
-        if (e.selection == atom_ && e.window == win_) {
+        if (e.selection == sel_atom_ && e.window == win_) {
           // If someone else took the selection, that's our sign to leave.
           XDestroyWindow(display_, win_);
           win_ = None;
@@ -224,9 +226,9 @@ bool SettingsManager::UpdateProperty(Window win) {
 
   XChangeProperty(display_,
                   win,
-                  atom_,  // property
-                  atom_,  // type
-                  8,      // format (bits per element)
+                  prop_atom_,  // property
+                  prop_atom_,  // type
+                  8,           // format (bits per element)
                   PropModeReplace,
                   reinterpret_cast<unsigned char*>(buffer),
                   writer.bytes_written());

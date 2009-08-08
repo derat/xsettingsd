@@ -49,7 +49,8 @@ class SettingsManager {
 
   Display* display_;
   Window root_;
-  Atom atom_;
+  Atom sel_atom_;
+  Atom prop_atom_;
   Window win_;
 
   DISALLOW_COPY_AND_ASSIGN(SettingsManager);
