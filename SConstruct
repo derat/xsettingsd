@@ -54,6 +54,9 @@ daemon_env['LIBS'] = libxsettingsd
 daemon_env.ParseConfig('pkg-config --cflags --libs x11')
 
 xsettingsd = daemon_env.Program('xsettingsd', 'xsettingsd.cc')
+dump_settings = daemon_env.Program('dump_settings', 'dump_settings.cc')
+
+Default([xsettingsd, dump_settings])
 
 
 test_env = daemon_env.Clone()
@@ -64,10 +67,3 @@ for file in Glob('*_test.cc', strings=True):
   tests += test_env.Program(file)
 test_env.RunTests('test', tests)
 
-
-dump_env = Environment(ENV=os.environ)
-dump_env['CCFLAGS'] = '-Wall -Werror -g'
-dump_env.ParseConfig('pkg-config --cflags --libs x11')
-dump_settings = dump_env.Program('dump_settings', 'dump_settings.cc')
-
-Default([xsettingsd, dump_settings])

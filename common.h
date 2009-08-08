@@ -16,6 +16,8 @@ std::string StringPrintf(const char* format, ...);
 
 bool IsLittleEndian();
 
+int GetPadding(int length, int increment);
+
 extern const char* kProgName;
 
 }  // namespace xsettingsd
