@@ -34,12 +34,12 @@ def run_tests(target, source, env):
 run_tests_builder = Builder(action=run_tests)
 
 
-env = Environment(
+daemon_env = Environment(
     BUILDERS = {
       'RunTests': run_tests_builder,
     },
     ENV=os.environ)
-env['CCFLAGS'] = '-Wall -Werror -g'
+daemon_env['CCFLAGS'] = '-Wall -Werror -g'
 
 
 srcs = Split('''\
@@ -49,17 +49,25 @@ srcs = Split('''\
   setting.cc
   settings_manager.cc
 ''')
-libxsettingsd = env.Library('xsettingsd', srcs)
-env['LIBS'] = libxsettingsd
-env.ParseConfig('pkg-config --cflags --libs x11')
+libxsettingsd = daemon_env.Library('xsettingsd', srcs)
+daemon_env['LIBS'] = libxsettingsd
+daemon_env.ParseConfig('pkg-config --cflags --libs x11')
 
-Default(env.Program('xsettingsd', 'xsettingsd.cc'))
+xsettingsd = daemon_env.Program('xsettingsd', 'xsettingsd.cc')
 
 
-test_env = env.Clone()
+test_env = daemon_env.Clone()
 test_env.Append(CCFLAGS=' -D__TESTING', LINKFLAGS=' -lgtest')
 
 tests = []
 for file in Glob('*_test.cc', strings=True):
   tests += test_env.Program(file)
 test_env.RunTests('test', tests)
+
+
+dump_env = Environment(ENV=os.environ)
+dump_env['CCFLAGS'] = '-Wall -Werror -g'
+dump_env.ParseConfig('pkg-config --cflags --libs x11')
+dump_settings = dump_env.Program('dump_settings', 'dump_settings.cc')
+
+Default([xsettingsd, dump_settings])
