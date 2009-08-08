@@ -3,6 +3,9 @@
 
 #include "settings_manager.h"
 
+#include <cassert>
+#include <cstring>
+
 #include "config_parser.h"
 #include "data_writer.h"
 #include "setting.h"
@@ -14,7 +17,18 @@ using std::string;
 namespace xsettingsd {
 
 SettingsManager::SettingsManager()
-    : serial_(0) {
+    : serial_(0),
+      display_(NULL),
+      root_(None),
+      atom_(None),
+      win_(None) {
+}
+
+SettingsManager::~SettingsManager() {
+  if (display_) {
+    XCloseDisplay(display_);
+    display_ = NULL;
+  }
 }
 
 bool SettingsManager::LoadConfig(const string& filename) {
@@ -30,39 +44,129 @@ bool SettingsManager::LoadConfig(const string& filename) {
   return true;
 }
 
-#if 0
-bool SettingsManager::TakeSelection(bool replace) {
-  Atom atom = XInternAtom(display_, "_XSETTINGS_S0");
+bool SettingsManager::InitX11(bool replace_existing_manager) {
+  assert(!display_);
+  display_ = XOpenDisplay(NULL);
+  if (!display_) {
+    fprintf(stderr, "%s: Unable to open connection to X server\n", kProgName);
+    return false;
+  }
+  root_ = DefaultRootWindow(display_);
 
-  // TODO: Select events for someone taking the selection.
+  // TODO: Handle multiple screens.
+  atom_ = XInternAtom(display_, "_XSETTINGS_S0", False);
 
   XGrabServer(display_);
-  Window prev_win = XGetSelectionOwner(display_, atom);
-  if (prev_win != None && !replace) {
+  Window prev_win = XGetSelectionOwner(display_, atom_);
+  fprintf(stderr, "Selection is owned by 0x%x\n",
+          static_cast<unsigned int>(prev_win));
+  if (prev_win != None && !replace_existing_manager) {
+    fprintf(stderr, "%s: Someone else already owns the _XSETTINGS_S0 selection "
+            "and we weren't asked to replace them\n", kProgName);
     XUngrabServer(display_);
+    return false;
+  }
+
+  XSetWindowAttributes attr;
+  attr.override_redirect = True;
+  win_ = XCreateWindow(display_,
+                       root_,               // parent
+                       -1, -1,              // x, y
+                       1, 1,                // width, height
+                       0,                   // border_width
+                       CopyFromParent,      // depth
+                       InputOutput,         // class
+                       CopyFromParent,      // visual
+                       CWOverrideRedirect,  // attr_mask
+                       &attr);
+  fprintf(stderr, "Created window 0x%x\n", static_cast<unsigned int>(win_));
+  XStoreName(display_, win_, kProgName);
+  XChangeProperty(display_,
+                  win_,
+                  XInternAtom(display_, "_NET_WM_NAME", False),  // property
+                  XInternAtom(display_, "UTF8_STRING", False),   // type
+                  8,  // format (bits per element)
+                  PropModeReplace,
+                  reinterpret_cast<const unsigned char*>(kProgName),
+                  strlen(kProgName));
+
+  if (!UpdateProperty()) {
+    fprintf(stderr, "Unable to update settings property on window\n");
     return false;
   }
 
   if (prev_win)
     XSelectInput(display_, prev_win, StructureNotifyMask);
-  XSetSelectionOwner(display_, atom, win, CurrentTime);
+  XSetSelectionOwner(display_, atom_, win_, CurrentTime);
+  fprintf(stderr, "Took ownership of selection\n");
   XUngrabServer(display_);
 
   if (prev_win) {
+    // Wait for the previous owner to go away.
     XEvent event;
     while (true) {
       XWindowEvent(display_, prev_win, StructureNotifyMask, &event);
-      if (event.type == StructureNotify)
+      if (event.type == DestroyNotify)
         break;
     }
   }
 
-  if (XGetSelectionOwner(display_, atom) != win)
+  // Make sure that no one else took the selection while we were waiting.
+  if (XGetSelectionOwner(display_, atom_) != win_) {
+    fprintf(stderr, "%s: Someone else took ownership of the _XSETTINGS_S0 "
+            "selection\n", kProgName);
     return false;
+  }
 
-  // TODO: Send message to root window.
+  XEvent ev;
+  ev.xclient.type = ClientMessage;
+  ev.xclient.window = root_;
+  ev.xclient.message_type = XInternAtom(display_, "MANAGER", False);
+  ev.xclient.format = 32;
+  ev.xclient.data.l[0] = CurrentTime;  // FIXME
+  ev.xclient.data.l[1] = atom_;
+  ev.xclient.data.l[2] = win_;
+  ev.xclient.data.l[3] = 0;
+  XSendEvent(display_,
+             root_,
+             False,                // propagate
+             StructureNotifyMask,  // event_mask
+             &ev);
+
+  return true;
 }
-#endif
+
+void SettingsManager::RunEventLoop() {
+  while (true) {
+    XEvent event;
+    XNextEvent(display_, &event);
+
+    switch (event.type) {
+      case MappingNotify:
+        // Doesn't really mean anything to us, but might as well handle it.
+        XRefreshKeyboardMapping(&(event->xmapping));
+        break;
+      case SelectionClear: {
+        const XSelectionClearEvent& e = event.xselectionclear;
+        if (e.selection == atom_ && e.window == win_) {
+          // If someone else took the selection, that's our sign to leave.
+          XDestroyWindow(display_, win_);
+          win_ = None;
+          return;
+        }
+        fprintf(stderr, "%s: Ignoring SelectionClear event with atom 0x%x "
+                "and window 0x%x\n", kProgName,
+                static_cast<unsigned int>(e.selection),
+                static_cast<unsigned int>(e.window));
+        break;
+      }
+      default:
+        fprintf(stderr, "%s: Ignoring event of type %d\n",
+                kProgName, event.type);
+        break;
+    }
+  }
+}
 
 bool SettingsManager::UpdateProperty() {
   static const int kBufferSize = 8192;
@@ -81,6 +185,14 @@ bool SettingsManager::UpdateProperty() {
       return false;
   }
 
+  XChangeProperty(display_,
+                  win_,
+                  atom_,  // property
+                  atom_,  // type
+                  8,      // format (bits per element)
+                  PropModeReplace,
+                  reinterpret_cast<unsigned char*>(buffer),
+                  writer.bytes_written());
   return true;
 }
 

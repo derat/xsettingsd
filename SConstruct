@@ -51,6 +51,7 @@ srcs = Split('''\
 ''')
 libxsettingsd = env.Library('xsettingsd', srcs)
 env['LIBS'] = libxsettingsd
+env.ParseConfig('pkg-config --cflags --libs x11')
 
 Default(env.Program('xsettingsd', 'xsettingsd.cc'))
 

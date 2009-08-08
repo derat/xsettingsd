@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <string>
 
+#include <X11/Xlib.h>
+
 #include "common.h"
 #include "setting.h"
 
@@ -17,19 +19,35 @@ class Setting;
 class SettingsManager {
  public:
   SettingsManager();
+  ~SettingsManager();
 
   // Load settings from 'filename'.  If the load was unsuccessful, false is
   // returned and an error is printed to stderr.
   bool LoadConfig(const std::string& filename);
 
-  bool UpdateProperty();
+  // Connect to the X server, create our window, and take the selection.
+  // Returns false if someone else already has the selection unless
+  // 'replace_existing_manager' is set.
+  bool InitX11(bool replace_existing_manager);
+
+  // Wait for events from the X server, exiting if we see someone else take
+  // the selection.
+  void RunEventLoop();
 
  private:
+  // Update the settings property on 'win_'.
+  bool UpdateProperty();
+
   // Currently-loaded settings.
   SettingsMap settings_;
 
   // Current serial number.
   uint32_t serial_;
+
+  Display* display_;
+  Window root_;
+  Atom atom_;
+  Window win_;
 
   DISALLOW_COPY_AND_ASSIGN(SettingsManager);
 };

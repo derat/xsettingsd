@@ -22,6 +22,9 @@ int main(int argc, char** argv) {
   SettingsManager manager;
   if (!manager.LoadConfig(filename))
     return 1;
+  if (!manager.InitX11(true))
+    return 1;
+  manager.RunEventLoop();
 
   return 0;
 }
