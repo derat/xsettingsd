@@ -34,12 +34,12 @@ def run_tests(target, source, env):
 run_tests_builder = Builder(action=run_tests)
 
 
-daemon_env = Environment(
+env = Environment(
     BUILDERS = {
       'RunTests': run_tests_builder,
     },
     ENV=os.environ)
-daemon_env['CCFLAGS'] = '-Wall -Werror'
+env['CCFLAGS'] = '-Wall -Werror'
 
 
 srcs = Split('''\
@@ -50,17 +50,17 @@ srcs = Split('''\
   setting.cc
   settings_manager.cc
 ''')
-libxsettingsd = daemon_env.Library('xsettingsd', srcs)
-daemon_env['LIBS'] = libxsettingsd
-daemon_env.ParseConfig('pkg-config --cflags --libs x11')
+libxsettingsd = env.Library('xsettingsd', srcs)
+env['LIBS'] = libxsettingsd
+env.ParseConfig('pkg-config --cflags --libs x11')
 
-xsettingsd = daemon_env.Program('xsettingsd', 'xsettingsd.cc')
-dump_settings = daemon_env.Program('dump_xsettings', 'dump_xsettings.cc')
+xsettingsd     = env.Program('xsettingsd', 'xsettingsd.cc')
+dump_xsettings = env.Program('dump_xsettings', 'dump_xsettings.cc')
 
-Default([xsettingsd, dump_settings])
+Default([xsettingsd, dump_xsettings])
 
 
-test_env = daemon_env.Clone()
+test_env = env.Clone()
 test_env.Append(CCFLAGS=' -D__TESTING', LINKFLAGS=' -lgtest')
 
 tests = []
