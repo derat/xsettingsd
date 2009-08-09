@@ -63,7 +63,7 @@ bool GetData(char* buffer, size_t buffer_size, size_t* data_size) {
     return false;
   }
   if (rem_bytes_ret > 0) {
-    fprintf(stderr, "Property %s on 0x%x is more than %d bytes (%lu remain)\n",
+    fprintf(stderr, "Property %s on 0x%x is more than %zu bytes (%lu remain)\n",
             kPropName, static_cast<unsigned int>(win), buffer_size,
             rem_bytes_ret);
     XFree(prop_ret);
@@ -113,7 +113,7 @@ bool DumpSetting(DataReader* reader) {
 
   size_t name_padding = GetPadding(name_size, 4);
   if (!reader->ReadBytes(NULL, name_padding)) {
-    fprintf(stderr, "Unable to read %d-byte setting name padding\n",
+    fprintf(stderr, "Unable to read %zu-byte setting name padding\n",
             name_padding);
     return false;
   }
@@ -147,7 +147,7 @@ bool DumpSetting(DataReader* reader) {
 
     size_t value_padding = GetPadding(value_size, 4);
     if (!reader->ReadBytes(NULL, value_padding)) {
-      fprintf(stderr, "Unable to read %d-byte string setting value padding\n",
+      fprintf(stderr, "Unable to read %zu-byte string setting value padding\n",
               value_padding);
       return false;
     }
