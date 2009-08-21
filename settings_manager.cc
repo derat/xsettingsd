@@ -52,6 +52,10 @@ bool SettingsManager::LoadConfig() {
     return false;
   }
   serial_++;
+  fprintf(stderr, "%s: Loaded %d setting%s from %s\n",
+          kProgName, new_settings.map().size(),
+          (new_settings.map().size() == 1) ? "" : "s",
+          config_filename_.c_str());
   settings_.swap(&new_settings);
   return true;
 }

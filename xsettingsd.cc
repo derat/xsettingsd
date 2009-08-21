@@ -31,13 +31,7 @@ int main(int argc, char** argv) {
       "         -s, --screen=SCREEN  screen to use (default is all)\n";
 
   int screen = -1;
-
-  const char* home_dir = getenv("HOME");
-  if (!home_dir) {
-    fprintf(stderr, "%s: $HOME undefined\n", kProgName);
-    return 1;
-  }
-  string config_file = StringPrintf("%s/.xsettingsd", home_dir);
+  string config_file = "";
 
   struct option options[] = {
     { "config", 1, NULL, 'c', },
@@ -64,6 +58,16 @@ int main(int argc, char** argv) {
         return 1;
       }
     }
+  }
+
+  // Use the default config file if one wasn't supplied via a flag.
+  if (config_file.empty()) {
+    const char* home_dir = getenv("HOME");
+    if (!home_dir) {
+      fprintf(stderr, "%s: $HOME undefined; use --config=FILE\n", kProgName);
+      return 1;
+    }
+    config_file = StringPrintf("%s/.xsettingsd", home_dir);
   }
 
   SettingsManager manager(config_file);
