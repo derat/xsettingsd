@@ -4,8 +4,10 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <getopt.h>
 #include <stdint.h>
 #include <string>
+#include <unistd.h>
 #include <X11/Xlib.h>
 
 #include "common.h"
@@ -17,7 +19,7 @@ using std::string;
 
 namespace xsettingsd {
 
-bool GetData(char* buffer, size_t buffer_size, size_t* data_size) {
+bool GetData(int screen, char* buffer, size_t buffer_size, size_t* data_size) {
   assert(data_size);
 
   Display* display = XOpenDisplay(NULL);
@@ -26,11 +28,11 @@ bool GetData(char* buffer, size_t buffer_size, size_t* data_size) {
     return false;
   }
 
-  static const char* kSelName = "_XSETTINGS_S0";
-  Atom sel_atom = XInternAtom(display, kSelName, False);
+  string sel_name = StringPrintf("_XSETTINGS_S%d", screen);
+  Atom sel_atom = XInternAtom(display, sel_name.c_str(), False);
   Window win = XGetSelectionOwner(display, sel_atom);
   if (win == None) {
-    fprintf(stderr, "No current owner for %s selection\n", kSelName);
+    fprintf(stderr, "No current owner for %s selection\n", sel_name.c_str());
     return false;
   }
 
@@ -223,11 +225,45 @@ bool DumpSettings(DataReader* reader) {
 }  // namespace xsettingsd
 
 int main(int argc, char** argv) {
+  static const char* kUsage =
+      "Usage: dump_xsettings [OPTION] ...\n"
+      "\n"
+      "Dump current XSETTINGS values in xsettingd's format.\n"
+      "\n"
+      "Options: -h, --help           print this help message\n"
+      "         -s, --screen=SCREEN  screen to use (default is 0)\n";
+
+  int screen = 0;
+
+  struct option options[] = {
+    { "help", 0, NULL, 'h', },
+    { "screen", 1, NULL, 's', },
+    { NULL, 0, NULL, 0 },
+  };
+
+  opterr = 0;
+  while (true) {
+    int ch = getopt_long(argc, argv, "hs:", options, NULL);
+    if (ch == -1) {
+      break;
+    } else if (ch == 'h' || ch == '?') {
+      fprintf(stderr, "%s", kUsage);
+      return 1;
+    } else if (ch == 's') {
+      char* endptr = NULL;
+      screen = strtol(optarg, &endptr, 10);
+      if (optarg[0] == '\0' || endptr[0] != '\0' || screen < 0) {
+        fprintf(stderr, "Invalid screen \"%s\"\n", optarg);
+        return 1;
+      }
+    }
+  }
+
   static const size_t kBufferSize = 2 << 15;
   char buffer[kBufferSize];
 
   size_t data_size = 0;
-  if (!xsettingsd::GetData(buffer, kBufferSize, &data_size))
+  if (!xsettingsd::GetData(screen, buffer, kBufferSize, &data_size))
     return 1;
   assert(data_size <= kBufferSize);
 

@@ -56,7 +56,7 @@ bool SettingsManager::LoadConfig() {
   return true;
 }
 
-bool SettingsManager::InitX11(bool replace_existing_manager) {
+bool SettingsManager::InitX11(int screen, bool replace_existing_manager) {
   assert(!display_);
   display_ = XOpenDisplay(NULL);
   if (!display_) {
@@ -71,7 +71,12 @@ bool SettingsManager::InitX11(bool replace_existing_manager) {
   if (!WriteProperty(&writer))
     return false;
 
-  for (int screen = 0; screen < ScreenCount(display_); ++screen) {
+  int min_screen = 0;
+  int max_screen = ScreenCount(display_) - 1;
+  if (screen >= 0)
+    min_screen = max_screen = screen;
+
+  for (screen = min_screen; screen <= max_screen; ++screen) {
     Window win = CreateWindow(screen);
     if (win == None) {
       fprintf(stderr, "%s: Unable to create window on screen %d\n",
@@ -146,8 +151,10 @@ void SettingsManager::RunEventLoop() {
       if (!WriteProperty(&writer))
         continue;
 
-      for (int screen = 0; screen < ScreenCount(display_); ++screen)
-        SetPropertyOnWindow(windows_.at(screen), data, writer.bytes_written());
+      for (vector<Window>::const_iterator it = windows_.begin();
+           it != windows_.end(); ++it) {
+        SetPropertyOnWindow(*it, data, writer.bytes_written());
+      }
     }
   }
 }
@@ -162,6 +169,9 @@ void SettingsManager::DestroyWindows() {
 }
 
 Window SettingsManager::CreateWindow(int screen) {
+  if (screen < 0 || screen >= ScreenCount(display_))
+    return None;
+
   XSetWindowAttributes attr;
   attr.override_redirect = True;
   Window win = XCreateWindow(display_,
@@ -174,11 +184,8 @@ Window SettingsManager::CreateWindow(int screen) {
                              CopyFromParent,                // visual
                              CWOverrideRedirect,            // attr_mask
                              &attr);
-  if (win == None) {
-    fprintf(stderr, "%s: Unable to create window on screen %d\n",
-            kProgName, screen);
-    return false;
-  }
+  if (win == None)
+    return None;
 
   // This sets a few properties for us, including WM_CLIENT_MACHINE.
   XSetWMProperties(display_,

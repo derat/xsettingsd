@@ -31,9 +31,10 @@ class SettingsManager {
   bool LoadConfig();
 
   // Connect to the X server, create windows, updates their properties, and
-  // take the selections.  Returns false if someone else already has a
-  // selection unless 'replace_existing_manager' is set.
-  bool InitX11(bool replace_existing_manager);
+  // take the selections.  A negative screen value will attempt to take the
+  // manager selection on all screens.  Returns false if someone else
+  // already has a selection unless 'replace_existing_manager' is set.
+  bool InitX11(int screen, bool replace_existing_manager);
 
   // Wait for events from the X server, destroying our windows and exiting
   // if we see someone else take a selection.
