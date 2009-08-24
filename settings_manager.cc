@@ -25,6 +25,7 @@ using std::vector;
 
 namespace xsettingsd {
 
+// Arbitrarily big number.
 static const int kMaxPropertySize = (2 << 15);
 
 SettingsManager::SettingsManager(const string& config_filename)
@@ -81,18 +82,19 @@ bool SettingsManager::InitX11(int screen, bool replace_existing_manager) {
     min_screen = max_screen = screen;
 
   for (screen = min_screen; screen <= max_screen; ++screen) {
-    Window win = CreateWindow(screen);
-    if (win == None) {
+    Window win = None;
+    Time timestamp = 0;
+    if (!CreateWindow(screen, &win, &timestamp)) {
       fprintf(stderr, "%s: Unable to create window on screen %d\n",
               kProgName, screen);
       return false;
     }
-    fprintf(stderr, "%s: Created window 0x%x on screen %d\n",
-            kProgName, static_cast<unsigned int>(win), screen);
+    fprintf(stderr, "%s: Created window 0x%x on screen %d with timestamp %lu\n",
+            kProgName, static_cast<unsigned int>(win), screen, timestamp);
 
     SetPropertyOnWindow(win, data, writer.bytes_written());
 
-    if (!ManageScreen(screen, win, replace_existing_manager))
+    if (!ManageScreen(screen, win, timestamp, replace_existing_manager))
       return false;
 
     windows_.push_back(win);
@@ -172,9 +174,14 @@ void SettingsManager::DestroyWindows() {
   windows_.clear();
 }
 
-Window SettingsManager::CreateWindow(int screen) {
+bool SettingsManager::CreateWindow(int screen,
+                                   Window* win_out,
+                                   Time* timestamp_out) {
+  assert(win_out);
+  assert(timestamp_out);
+
   if (screen < 0 || screen >= ScreenCount(display_))
-    return None;
+    return false;
 
   XSetWindowAttributes attr;
   attr.override_redirect = True;
@@ -189,7 +196,8 @@ Window SettingsManager::CreateWindow(int screen) {
                              CWOverrideRedirect,            // attr_mask
                              &attr);
   if (win == None)
-    return None;
+    return false;
+  *win_out = win;
 
   // This sets a few properties for us, including WM_CLIENT_MACHINE.
   XSetWMProperties(display_,
@@ -212,7 +220,10 @@ Window SettingsManager::CreateWindow(int screen) {
                   reinterpret_cast<const unsigned char*>(kProgName),
                   strlen(kProgName));
 
+  // Grab a timestamp from our final property change; we'll need it later
+  // when announcing that we've taken the manager selection.
   pid_t pid = getpid();
+  XSelectInput(display_, win, PropertyChangeMask);
   XChangeProperty(display_,
                   win,
                   XInternAtom(display_, "_NET_WM_PID", False),  // property
@@ -221,8 +232,18 @@ Window SettingsManager::CreateWindow(int screen) {
                   PropModeReplace,
                   reinterpret_cast<const unsigned char*>(&pid), // value
                   1);           // num elements
+  XSelectInput(display_, win, NoEventMask);
 
-  return win;
+  XEvent event;
+  while (true) {
+    XWindowEvent(display_, win, PropertyChangeMask, &event);
+    if (event.type == PropertyNotify) {
+      *timestamp_out = event.xproperty.time;
+      break;
+    }
+  }
+
+  return true;
 }
 
 bool SettingsManager::WriteProperty(DataWriter* writer) {
@@ -256,6 +277,7 @@ void SettingsManager::SetPropertyOnWindow(
 
 bool SettingsManager::ManageScreen(int screen,
                                    Window win,
+                                   Time timestamp,
                                    bool replace_existing_manager) {
   assert(display_);
   assert(win != None);
@@ -308,7 +330,7 @@ bool SettingsManager::ManageScreen(int screen,
   ev.xclient.window = root;
   ev.xclient.message_type = XInternAtom(display_, "MANAGER", False);
   ev.xclient.format = 32;
-  ev.xclient.data.l[0] = CurrentTime;  // FIXME
+  ev.xclient.data.l[0] = timestamp;
   ev.xclient.data.l[1] = sel_atom;
   ev.xclient.data.l[2] = win;
   ev.xclient.data.l[3] = 0;

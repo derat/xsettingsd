@@ -45,7 +45,7 @@ class SettingsManager {
   void DestroyWindows();
 
   // Create and initialize a window.
-  Window CreateWindow(int screen);
+  bool CreateWindow(int screen, Window* win_out, Time* timestamp_out);
 
   // Write the currently-loaded property to the passed-in buffer.
   bool WriteProperty(DataWriter* writer);
@@ -54,7 +54,8 @@ class SettingsManager {
   void SetPropertyOnWindow(Window win, const char* data, size_t size);
 
   // Manage XSETTINGS for a particular screen.
-  bool ManageScreen(int screen, Window win, bool replace_existing_manager);
+  bool ManageScreen(
+      int screen, Window win, Time timestamp, bool replace_existing_manager);
 
   // File from which we load settings.
   std::string config_filename_;

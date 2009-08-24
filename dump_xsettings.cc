@@ -90,8 +90,9 @@ bool DumpSetting(DataReader* reader) {
   }
   Setting::Type type = static_cast<Setting::Type>(type_byte);
 
-  if (type != Setting::TYPE_INTEGER && type != Setting::TYPE_STRING) {
-    // TODO: Handle colors.
+  if (type != Setting::TYPE_INTEGER &&
+      type != Setting::TYPE_STRING &&
+      type != Setting::TYPE_COLOR) {
     fprintf(stderr, "Got setting with unhandled type %d\n", type);
     return false;
   }

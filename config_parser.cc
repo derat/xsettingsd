@@ -351,7 +351,8 @@ bool ConfigParser::ReadInteger(int32_t* int_out) {
     *int_out *= 10;
     *int_out += (ch - '0');
 
-    // TODO: Check for overflow.
+    // TODO: Check for integer overflow (not a security hole; it'd just be
+    // nice to warn the user that their setting is going to wrap).
   }
 
   if (!got_digit) {
@@ -401,7 +402,6 @@ bool ConfigParser::ReadString(string* str_out) {
       in_backslash = false;
       if (ch == 'n')      ch = '\n';
       else if (ch == 't') ch = '\t';
-      // TODO: Maybe handle other characters.
     }
     str_out->push_back(ch);
   }
@@ -489,7 +489,8 @@ bool ConfigParser::ReadColor(uint16_t* red_out,
     }
     num = num * 10 + (ch - '0');
 
-    // TODO: Check for overflow.
+    // TODO: Check for integer overflow (not a security hole; it'd just be
+    // nice to warn the user that their setting is going to wrap).
   }
 
   if (nums.size() < 3 || nums.size() > 4) {
