@@ -1,0 +1,18 @@
+Source: xsettingsd
+Section: x11
+Priority: optional
+Maintainer: Daniel Erat <dan@erat.org>
+Build-Depends: debhelper (>= 7), libx11-dev, scons, libstdc++-dev
+Standards-Version: 3.8.0
+Homepage: http://code.google.com/p/xsettingsd/
+
+Package: xsettingsd
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Provides settings to X11 applications
+ xsettingsd is a daemon that implements the XSETTINGS specification.
+ It is intended to be small, fast, and minimally dependent on other
+ libraries. It can serve as an alternative to gnome-settings-daemon
+ for users who are not using the GNOME desktop environment but who
+ still run GTK+ applications and want to configure things such as
+ themes, font antialiasing/hinting, and UI sound effects.

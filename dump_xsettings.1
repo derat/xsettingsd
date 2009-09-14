@@ -1,0 +1,24 @@
+.TH DUMP_XSETTINGS 1
+.SH NAME
+dump_xsettings \- prints X11 application settings from an XSETTINGS provider
+.SH SYNOPSIS
+.B dump_xsettings
+.RI [ options ]
+.SH DESCRIPTION
+The XSETTINGS specification provides a method to notify X11 applications
+about changes to system settings.  \fBdump_xsettings\fR prints an X
+screen's current settings using \fIxsettingsd\fR(1)'s configuration file
+format.
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Display a help message and exit.
+.TP
+\fB\-s\fR, \fB\-\-screen\fR=\fISCREEN\fR
+Use the X screen numbered \fISCREEN\fR (default is 0).
+.SH BUGS
+\fIhttp://code.google.com/p/xsettingsd/issues/list\fR
+.SH SEE ALSO
+\fIxsettingsd\fR(1)
+.SH AUTHOR
+dump_xsettings was written by Daniel Erat <dan@erat.org>.
