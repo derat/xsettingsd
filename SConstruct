@@ -6,6 +6,7 @@ import subprocess
 
 Help('''
 Type: 'scons xsettingsd' to build xsettingsd
+      'scons dump_xsettings' to build dump_xsettings
       'scons test' to build and run all tests
 ''')
 
