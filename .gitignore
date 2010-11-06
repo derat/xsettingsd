@@ -4,3 +4,5 @@ dump_xsettings
 xsettingsd
 *.[ao]
 *_test
+build-stamp
+debian/
