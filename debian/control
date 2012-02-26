@@ -13,6 +13,7 @@ Homepage: http://code.google.com/p/xsettingsd/
 Package: xsettingsd
 Architecture: any
 Depends:
+ ${misc:Depends},
  ${shlibs:Depends}
 Description: Provides settings to X11 applications
  xsettingsd is a daemon that implements the XSETTINGS specification.
