@@ -4,7 +4,6 @@ Priority: optional
 Maintainer: Daniel Erat <dan@erat.org>
 Build-Depends:
  debhelper (>= 7.0.50~),
- libstdc++-dev,
  libx11-dev,
  scons
 Standards-Version: 3.8.0
