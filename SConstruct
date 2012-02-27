@@ -39,9 +39,14 @@ run_tests_builder = Builder(action=run_tests)
 env = Environment(
     BUILDERS = {
       'RunTests': run_tests_builder,
-    },
-    ENV=os.environ)
-env['CCFLAGS'] = '-Wall -Werror'
+    })
+
+env.Append(CPPFLAGS = os.environ['CPPFLAGS'],
+           CCFLAGS = os.environ['CCFLAGS'],
+           CXXFLAGS = os.environ['CXXFLAGS'],
+           LDFLAGS = os.environ['LDFLAGS'])
+
+env.Append(CCFLAGS = '-Wall -Werror')
 
 
 srcs = Split('''\
