@@ -1,54 +1,23 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
-# debian/rules file for building xsettingsd.
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+CFLAGS:=$(shell dpkg-buildflags --get CFLAGS)
+CPPFLAGS:=$(shell dpkg-buildflags --get CPPFLAGS)
+CXXFLAGS:=$(shell dpkg-buildflags --get CXXFLAGS)
+LDFLAGS:=$(shell dpkg-buildflags --get LDFLAGS)
 
-# This has to be exported to make some magic below work.
-export DH_OPTIONS
+export CFLAGS
+export CPPFLAGS
+export CXXFLAGS
+export LDFLAGS
 
-build: build-stamp
-build-stamp:
-	dh_testdir
-	scons xsettingsd dump_xsettings
-	touch $@
+%:
+	dh $@ --parallel
 
-clean:
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp
+override_dh_auto_build:
+	scons
+	dh_auto_build
+
+override_dh_auto_clean:
 	scons -c
 	rm -f .sconsign.dblite
-	dh_clean
-
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-	dh_install
-
-binary-indep: build install
-# No binary-independent packages.
-
-binary-arch: build install
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs
-	dh_installdocs
-	dh_installman
-	dh_lintian
-	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
-	dh_makeshlibs
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep binary-arch
-.PHONY: build clean install binary-indep binary-arch
+	dh_auto_clean
