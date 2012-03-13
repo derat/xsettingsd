@@ -42,7 +42,7 @@ env = Environment(
     })
 
 env.Append(CPPFLAGS = os.environ['CPPFLAGS'],
-           CCFLAGS = os.environ['CCFLAGS'],
+           CFLAGS = os.environ['CFLAGS'],
            CXXFLAGS = os.environ['CXXFLAGS'],
            LDFLAGS = os.environ['LDFLAGS'])
 
