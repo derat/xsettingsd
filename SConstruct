@@ -41,10 +41,10 @@ env = Environment(
       'RunTests': run_tests_builder,
     })
 
-env.Append(CPPFLAGS = os.environ['CPPFLAGS'],
-           CFLAGS = os.environ['CFLAGS'],
-           CXXFLAGS = os.environ['CXXFLAGS'],
-           LDFLAGS = os.environ['LDFLAGS'])
+env.Append(CPPFLAGS = os.environ.get('CPPFLAGS', ''),
+           CFLAGS = os.environ.get('CFLAGS', ''),
+           CXXFLAGS = os.environ.get('CXXFLAGS', ''),
+           LDFLAGS = os.environ.get('LDFLAGS', ''))
 
 env.Append(CCFLAGS = '-Wall -Werror')
 
