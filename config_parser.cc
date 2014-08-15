@@ -290,7 +290,7 @@ bool ConfigParser::ReadValue(Setting** setting_ptr) {
   char ch = stream_->GetChar();
   stream_->UngetChar(ch);
 
-  if (ch >= '0' && ch <= '9') {
+  if ((ch >= '0' && ch <= '9') || ch == '-') {
     int32_t value = 0;
     if (!ReadInteger(&value))
       return false;
