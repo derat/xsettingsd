@@ -197,15 +197,19 @@ bool ConfigParser::FileCharStream::InitImpl(string* error_out) {
 
 bool ConfigParser::FileCharStream::AtEOFImpl() {
   assert(file_);
-  int ch = GetChar();
+  int ch = GetCharPriv();
   UngetChar(ch);
   return ch == EOF;
 }
 
 char ConfigParser::FileCharStream::GetCharImpl() {
-  assert(file_);
-  int ch = fgetc(file_);
+  char ch = GetCharPriv();
   return ch;
+}
+
+int ConfigParser::FileCharStream::GetCharPriv() {
+  assert(file_);
+  return fgetc(file_);
 }
 
 ConfigParser::StringCharStream::StringCharStream(const string& data)
@@ -218,7 +222,13 @@ bool ConfigParser::StringCharStream::AtEOFImpl() {
 }
 
 char ConfigParser::StringCharStream::GetCharImpl() {
-  return data_.at(pos_++);
+  char ret = GetCharPriv();
+  return ret;
+}
+
+int ConfigParser::StringCharStream::GetCharPriv() {
+  int ret = data_.at(pos_++);
+  return ret;
 }
 
 bool ConfigParser::ReadSettingName(string* name_out) {
