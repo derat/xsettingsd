@@ -80,6 +80,7 @@ class ConfigParser {
     virtual bool InitImpl(std::string* error_out) { return true; }
     virtual bool AtEOFImpl() = 0;
     virtual char GetCharImpl() = 0;
+    virtual int  GetCharPriv() = 0;
 
     // Has Init() been called?
     bool initialized_;
@@ -111,6 +112,7 @@ class ConfigParser {
     bool InitImpl(std::string* error_out);
     bool AtEOFImpl();
     char GetCharImpl();
+    int  GetCharPriv();
 
     std::string filename_;
     FILE* file_;
@@ -126,6 +128,7 @@ class ConfigParser {
    private:
     bool AtEOFImpl();
     char GetCharImpl();
+    int  GetCharPriv();
 
     std::string data_;
     size_t pos_;
