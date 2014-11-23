@@ -70,7 +70,7 @@ bool ConfigParser::Parse(SettingsMap* settings,
   bool in_comment = false;
 
   while (!stream_->AtEOF()) {
-    char ch = stream_->GetChar();
+    int ch = stream_->GetChar();
 
     if (ch == '#') {
       in_comment = true;
@@ -138,7 +138,7 @@ bool ConfigParser::CharStream::AtEOF() {
   return (!have_buffered_char_ && AtEOFImpl());
 }
 
-char ConfigParser::CharStream::GetChar() {
+int ConfigParser::CharStream::GetChar() {
   assert(initialized_);
 
   prev_at_line_end_ = at_line_end_;
@@ -147,7 +147,7 @@ char ConfigParser::CharStream::GetChar() {
     at_line_end_ = false;
   }
 
-  char ch = 0;
+  int ch = 0;
   if (have_buffered_char_) {
     have_buffered_char_ = false;
     ch = buffered_char_;
@@ -161,7 +161,7 @@ char ConfigParser::CharStream::GetChar() {
   return ch;
 }
 
-void ConfigParser::CharStream::UngetChar(char ch) {
+void ConfigParser::CharStream::UngetChar(int ch) {
   if (prev_at_line_end_)
     line_num_--;
   at_line_end_ = prev_at_line_end_;
@@ -202,10 +202,9 @@ bool ConfigParser::FileCharStream::AtEOFImpl() {
   return ch == EOF;
 }
 
-char ConfigParser::FileCharStream::GetCharImpl() {
+int ConfigParser::FileCharStream::GetCharImpl() {
   assert(file_);
-  int ch = fgetc(file_);
-  return ch;
+  return fgetc(file_);
 }
 
 ConfigParser::StringCharStream::StringCharStream(const string& data)
@@ -217,7 +216,7 @@ bool ConfigParser::StringCharStream::AtEOFImpl() {
   return pos_ == data_.size();
 }
 
-char ConfigParser::StringCharStream::GetCharImpl() {
+int ConfigParser::StringCharStream::GetCharImpl() {
   return data_.at(pos_++);
 }
 
@@ -230,7 +229,7 @@ bool ConfigParser::ReadSettingName(string* name_out) {
     if (stream_->AtEOF())
       break;
 
-    char ch = stream_->GetChar();
+    int ch = stream_->GetChar();
     if (isspace(ch) || ch == '#') {
       stream_->UngetChar(ch);
       break;
@@ -287,7 +286,7 @@ bool ConfigParser::ReadValue(Setting** setting_ptr) {
     return false;
   }
 
-  char ch = stream_->GetChar();
+  int ch = stream_->GetChar();
   stream_->UngetChar(ch);
 
   if ((ch >= '0' && ch <= '9') || ch == '-') {
@@ -322,7 +321,7 @@ bool ConfigParser::ReadInteger(int32_t* int_out) {
     if (stream_->AtEOF())
       break;
 
-    char ch = stream_->GetChar();
+    int ch = stream_->GetChar();
     if (isspace(ch) || ch == '#') {
       stream_->UngetChar(ch);
       break;
@@ -383,7 +382,7 @@ bool ConfigParser::ReadString(string* str_out) {
       return false;
     }
 
-    char ch = stream_->GetChar();
+    int ch = stream_->GetChar();
     if (ch == '\n') {
       SetErrorF("Got newline mid-string");
       return false;
@@ -440,7 +439,7 @@ bool ConfigParser::ReadColor(uint16_t* red_out,
       return false;
     }
 
-    char ch = stream_->GetChar();
+    int ch = stream_->GetChar();
     if (ch == '\n') {
       SetErrorF("Got newline mid-color");
       return false;
