@@ -70,16 +70,16 @@ class ConfigParser {
     bool AtEOF();
 
     // Get the next character in the stream.
-    char GetChar();
+    int GetChar();
 
     // Push a previously-read character back onto the stream.
     // At most one character can be buffered.
-    void UngetChar(char ch);
+    void UngetChar(int ch);
 
    private:
     virtual bool InitImpl(std::string* error_out) { return true; }
     virtual bool AtEOFImpl() = 0;
-    virtual char GetCharImpl() = 0;
+    virtual int GetCharImpl() = 0;
 
     // Has Init() been called?
     bool initialized_;
@@ -88,7 +88,7 @@ class ConfigParser {
     bool have_buffered_char_;
 
     // The character returned by UngetChar().
-    char buffered_char_;
+    int buffered_char_;
 
     // Are we currently at the end of the line?
     bool at_line_end_;
@@ -110,7 +110,7 @@ class ConfigParser {
    private:
     bool InitImpl(std::string* error_out);
     bool AtEOFImpl();
-    char GetCharImpl();
+    int GetCharImpl();
 
     std::string filename_;
     FILE* file_;
@@ -125,7 +125,7 @@ class ConfigParser {
 
    private:
     bool AtEOFImpl();
-    char GetCharImpl();
+    int GetCharImpl();
 
     std::string data_;
     size_t pos_;
