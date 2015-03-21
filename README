@@ -6,7 +6,7 @@ users who are not using the GNOME desktop environment but who still run
 GTK+ applications and want to configure things such as themes, font
 antialiasing/hinting, and UI sound effects.
 
-Documentation is available at http://code.google.com/p/xsettingsd/
+Documentation is available at https://github.com/derat/xsettingsd/wiki.
 
 ---
 Daniel Erat <dan-xsettingsd@erat.org>
