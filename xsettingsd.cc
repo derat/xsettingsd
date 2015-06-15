@@ -1,24 +1,40 @@
 // Copyright 2009 Daniel Erat <dan@erat.org>
 // All rights reserved.
 
+#include <getopt.h>
+#include <unistd.h>
+
 #include <cerrno>
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <getopt.h>
 #include <string>
-#include <unistd.h>
 
 #include "common.h"
 #include "config_parser.h"
 #include "settings_manager.h"
 
-using namespace xsettingsd;
 using std::string;
+using std::vector;
+
+namespace {
 
 void HandleSignal(int signum) {
 }
+
+// Returns the first path in |paths| that is readable, or an empty string if
+// none of the paths can be read.
+string GetFirstReadablePath(const vector<string>& paths) {
+  for (size_t i = 0; i < paths.size(); ++i) {
+    if (access(paths[i].c_str(), R_OK) == 0) {
+      return paths[i];
+    }
+  }
+  return string();
+}
+
+}  // namespace
 
 int main(int argc, char** argv) {
   static const char* kUsage =
@@ -32,7 +48,7 @@ int main(int argc, char** argv) {
       "         -s, --screen=SCREEN  screen to use (default is all)\n";
 
   int screen = -1;
-  string config_file = "";
+  string config_file;
 
   struct option options[] = {
     { "config", 1, NULL, 'c', },
@@ -61,17 +77,20 @@ int main(int argc, char** argv) {
     }
   }
 
-  // Use the default config file if one wasn't supplied via a flag.
+  // Check default config file locations if one wasn't supplied via a flag.
   if (config_file.empty()) {
-    const char* home_dir = getenv("HOME");
-    if (!home_dir) {
-      fprintf(stderr, "%s: $HOME undefined; use --config=FILE\n", kProgName);
+    const vector<string> paths = xsettingsd::GetDefaultConfigFilePaths();
+    config_file = GetFirstReadablePath(paths);
+    if (config_file.empty()) {
+      fprintf(stderr, "%s: Couldn't find config file. Tried the following:\n",
+              xsettingsd::kProgName);
+      for (size_t i = 0; i < paths.size(); ++i)
+        fprintf(stderr, "  %s\n", paths[i].c_str());
       return 1;
     }
-    config_file = StringPrintf("%s/.xsettingsd", home_dir);
   }
 
-  SettingsManager manager(config_file);
+  xsettingsd::SettingsManager manager(config_file);
   if (!manager.LoadConfig())
     return 1;
   if (!manager.InitX11(screen, true))
