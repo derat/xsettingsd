@@ -44,7 +44,7 @@ env = Environment(
 env.Append(CPPFLAGS=os.environ.get('CPPFLAGS', ''),
            CFLAGS=os.environ.get('CFLAGS', ''),
            CXXFLAGS=os.environ.get('CXXFLAGS', ''),
-           LDFLAGS=os.environ.get('LDFLAGS', ''))
+           LINKFLAGS=os.environ.get('LDFLAGS', ''))
 
 env.Append(CCFLAGS='-Wall -Werror -Wno-narrowing')
 
