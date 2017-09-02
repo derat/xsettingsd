@@ -170,7 +170,7 @@ class ConfigParser {
 
   // If an error was encountered while parsing, the line number where
   // it happened and a string describing it.  Line 0 is used for errors
-  // occuring before making any progress into the file.
+  // occurring before making any progress into the file.
   int error_line_num_;
   std::string error_str_;
 
