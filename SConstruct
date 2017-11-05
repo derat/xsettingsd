@@ -28,10 +28,10 @@ def run_tests(target, source, env):
     [stdout, stderr] = proc.communicate()
     proc.wait()
     if proc.returncode == 0:
-      print '%s OK' % padded_name
+      print('%s OK' % padded_name)
     else:
-      print "%s FAILED\n" % padded_name
-      print stdout
+      print("%s FAILED\n" % padded_name)
+      print(stdout)
 
 run_tests_builder = Builder(action=run_tests)
 
