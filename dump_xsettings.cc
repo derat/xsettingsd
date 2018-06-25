@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
 
   xsettingsd::DataReader reader(buffer, data_size);
   if (!xsettingsd::DumpSettings(&reader))
-    return false;
+    return 1;
 
   return 0;
 }
