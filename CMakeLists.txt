@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(xsettingsd
-  VERSION 1.0.0
+  VERSION 1.0.2
   DESCRIPTION "Provides settings to X11 applications via the XSETTINGS specification"
   HOMEPAGE_URL "https://github.com/derat/xsettingsd"
   LANGUAGES CXX
