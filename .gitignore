@@ -5,7 +5,4 @@ xsettingsd
 *.[ao]
 *_test
 build-stamp
-debian/files
-debian/*.log
-debian/*.substvars
 /build/
