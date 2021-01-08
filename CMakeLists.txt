@@ -48,3 +48,5 @@ if(GTEST_FOUND AND BUILD_TESTING)
   target_compile_options(setting_test PRIVATE -Wno-narrowing)
   gtest_discover_tests(setting_test)
 endif()
+
+add_custom_target(uninstall COMMAND xargs rm -v < ${CMAKE_BINARY_DIR}/install_manifest.txt)
