@@ -1,0 +1,7 @@
+[Unit]
+Description=XSETTINGS-protocol daemon
+PartOf=graphical-session.target
+
+[Service]
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/xsettingsd
+Slice=session.slice
