@@ -31,6 +31,9 @@ target_link_libraries(dump_xsettings PRIVATE libxsettingsd X11::X11)
 install(TARGETS xsettingsd dump_xsettings DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES xsettingsd.1 dump_xsettings.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
+configure_file(xsettingsd.service.in xsettingsd.service)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/xsettingsd.service DESTINATION lib/systemd/user)
+
 if(GTEST_FOUND AND BUILD_TESTING)
   include(GoogleTest)
    
