@@ -32,7 +32,7 @@ install(TARGETS xsettingsd dump_xsettings DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES xsettingsd.1 dump_xsettings.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 
 configure_file(xsettingsd.service.in xsettingsd.service)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/xsettingsd.service DESTINATION lib/systemd/user)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/xsettingsd.service" DESTINATION lib/systemd/user)
 
 if(GTEST_FOUND AND BUILD_TESTING)
   include(GoogleTest)
@@ -52,4 +52,4 @@ if(GTEST_FOUND AND BUILD_TESTING)
   gtest_discover_tests(setting_test)
 endif()
 
-add_custom_target(uninstall COMMAND xargs rm -v < ${CMAKE_BINARY_DIR}/install_manifest.txt)
+add_custom_target(uninstall COMMAND xargs rm -v < "${CMAKE_BINARY_DIR}/install_manifest.txt")
