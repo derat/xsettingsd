@@ -11,6 +11,7 @@ include(GNUInstallDirs)
 include(CTest)
 
 find_package(X11 REQUIRED)
+include_directories(${X11_INCLUDE_DIR})
 find_package(GTest)
 
 add_library(libxsettingsd STATIC
