@@ -119,6 +119,8 @@ properties in the [GtkSettings class].
 
 | **Name** | **Type** | **Description** | **Values** | **Details** |
 |:---------|:---------|:----------------|:-----------|:------------|
+| `Gtk/CursorThemeName` | string | cursor theme (see also [#23](https://github.com/derat/xsettingsd/issues/23)) | e.g. subdirectories of `/usr/share/icons` | [`gtk-cursor-theme-name`](https://docs.gtk.org/gtk4/property.Settings.gtk-cursor-theme-name.html) |
+| `Gtk/DecorationLayout` | string | layout of gtk titlebar buttons | `:`=no titlebar buttons, `:minimize,maximize,close`=buttons right, see gtk documentation -> | [`gtk-decoration-layout`](https://docs.gtk.org/gtk4/property.Settings.gtk-decoration-layout.html) |
 | `Net/CursorBlink` | boolean | whether the (text editing) cursor should blink | `0`=no, `1`=yes | [`gtk-cursor-blink`](https://docs.gtk.org/gtk4/property.Settings.gtk-cursor-blink.html) |
 | `Net/CursorBlinkTime` | integer | length of the cursor blink cycle, in milleseconds | `1200` (default), `500`, etc. | [`gtk-cursor-blink-time`](https://docs.gtk.org/gtk4/property.Settings.gtk-cursor-blink-time.html) |
 | `Net/DndDragThreshold` | integer | number of pixels the cursor can move before dragging | `8` (default), `0`, etc. | [`gtk-dnd-drag-threshold`](https://docs.gtk.org/gtk4/property.Settings.gtk-dnd-drag-threshold.html) |
@@ -134,8 +136,6 @@ properties in the [GtkSettings class].
 | `Xft/HintStyle` | string | text hinting style | `hintnone`, `hintslight`, `hintmedium`, `hintfull` | [`gtk-xft-hintstyle`](https://docs.gtk.org/gtk4/property.Settings.gtk-xft-hintstyle.html) |
 | `Xft/Hinting` | integer | text hinting | `0`=no, `1`=yes, `-1`=default | [`gtk-xft-hinting`](https://docs.gtk.org/gtk4/property.Settings.gtk-xft-hinting.html) |
 | `Xft/RGBA` | string | text subpixel rendering | `none`, `rgb`, `bgr`, `vrgb`, `vbgr` | [`gtk-xft-rgba`](https://docs.gtk.org/gtk4/property.Settings.gtk-xft-rgba.html) |
-| `Gtk/CursorThemeName` | string | cursor theme (see also [#23](https://github.com/derat/xsettingsd/issues/23)) | e.g. subdirectories of `/usr/share/icons` | [`gtk-cursor-theme-name`](https://docs.gtk.org/gtk4/property.Settings.gtk-cursor-theme-name.html) |
-| `Gtk/DecorationLayout` | string | layout of gtk titlebar buttons | `:`=no titlebar buttons, `:minimize,maximize,close`=buttons right, see gtk documentation -> | [`gtk-decoration-layout`](https://docs.gtk.org/gtk4/property.Settings.gtk-decoration-layout.html)
 
 <https://www.freedesktop.org/wiki/Specifications/XSettingsRegistry/> also lists
 standardized settings.
