@@ -119,17 +119,23 @@ properties in the [GtkSettings class].
 
 | **Name** | **Type** | **Description** | **Values** | **Details** |
 |:---------|:---------|:----------------|:-----------|:------------|
-| `Gtk/CursorThemeName` | string | cursor theme (see also [#23](https://github.com/derat/xsettingsd/issues/23)) | e.g. subdirectories of `/usr/share/icons` | `gtk-cursor-theme-name` |
-| `Net/EnableEventSounds` | integer | whether to play event sounds | `0`=no, `1`=yes | `gtk-enable-event-sounds` |
-| `Net/EnableInputFeedbackSounds` | integer  | if event sounds are enabled, should they be played in response to input? | `0`=no, `1`=yes | `gtk-enable-input-feedback-sounds` |
-| `Net/IconThemeName` | string | icon theme | e.g. subdirectories of `/usr/share/icons` | `gtk-icon-theme-name` |
-| `Net/SoundThemeName` | string | sound theme | ? | `gtk-sound-theme-name` |
-| `Net/ThemeName` | string | widget theme | e.g. subdirectories of `/usr/share/themes` | `gtk-theme-name` |
-| `Xft/Antialias` | integer | text antialiasing | `0`=no, `1`=yes, `-1`=default | `gtk-xft-antialias` |
-| `Xft/DPI` | integer  | display DPI | `1024*dots/inch`, `-1`=default | `gtk-xft-dpi` |
-| `Xft/HintStyle` | string | text hinting style | `hintnone`, `hintslight`, `hintmedium`, `hintfull` | `gtk-xft-hintstyle` |
-| `Xft/Hinting` | integer | text hinting | `0`=no, `1`=yes, `-1`=default | `gtk-xft-hinting` |
-| `Xft/RGBA` | string | text subpixel rendering | `none`, `rgb`, `bgr`, `vrgb`, `vbgr` | `gtk-xft-rgba` |
+| `Net/CursorBlink` | boolean | whether the (text editing) cursor should blink | `0`=no, `1`=yes | [`gtk-cursor-blink`](https://docs.gtk.org/gtk4/property.Settings.gtk-cursor-blink.html) |
+| `Net/CursorBlinkTime` | integer | length of the cursor blink cycle, in milleseconds | `1200` (default), `500`, etc. | [`gtk-cursor-blink-time`](https://docs.gtk.org/gtk4/property.Settings.gtk-cursor-blink-time.html) |
+| `Net/DndDragThreshold` | integer | number of pixels the cursor can move before dragging | `8` (default), `0`, etc. | [`gtk-dnd-drag-threshold`](https://docs.gtk.org/gtk4/property.Settings.gtk-dnd-drag-threshold.html) |
+| `Net/DoubleClickDistance ` | integer | maximum distance allowed between two clicks for them to be considered a double click (in pixels) | `5` (default), `20`, etc. | [`gtk-double-click-distance`](https://docs.gtk.org/gtk4/property.Settings.gtk-double-click-distance.html) |
+| `Net/DoubleClickTime` | integer | maximum time allowed between two clicks for them to be considered a double click (in milliseconds) | `250` (default), `500`, etc. | [`gtk-double-click-time`](https://docs.gtk.org/gtk4/property.Settings.gtk-double-click-time.html) |
+| `Net/EnableEventSounds` | boolean | whether to play event sounds | `0`=no, `1`=yes | [`gtk-enable-event-sounds`](https://docs.gtk.org/gtk4/property.Settings.gtk-enable-event-sounds.html) |
+| `Net/EnableInputFeedbackSounds` | boolean  | if event sounds are enabled, should they be played in response to input? | `0`=no, `1`=yes | [`gtk-enable-input-feedback-sounds`](https://docs.gtk.org/gtk4/property.Settings.gtk-enable-input-feedback-sounds.html) |
+| `Net/IconThemeName` | string | icon theme | e.g. subdirectories of `/usr/share/icons` | [`gtk-icon-theme-name`](https://docs.gtk.org/gtk4/property.Settings.gtk-icon-theme-name.html) |
+| `Net/SoundThemeName` | string | sound theme | ? | [`gtk-sound-theme-name`](https://docs.gtk.org/gtk4/property.Settings.gtk-sound-theme-name.html) |
+| `Net/ThemeName` | string | widget theme | e.g. subdirectories of `/usr/share/themes` | [`gtk-theme-name`](https://docs.gtk.org/gtk4/property.Settings.gtk-theme-name.html) |
+| `Xft/Antialias` | integer | text antialiasing | `0`=no, `1`=yes, `-1`=default | [`gtk-xft-antialias`](https://docs.gtk.org/gtk4/property.Settings.gtk-xft-antialias.html) |
+| `Xft/DPI` | integer  | display DPI | `1024*dots/inch`, `-1`=default | [`gtk-xft-dpi`](https://docs.gtk.org/gtk4/property.Settings.gtk-xft-dpi.html) |
+| `Xft/HintStyle` | string | text hinting style | `hintnone`, `hintslight`, `hintmedium`, `hintfull` | [`gtk-xft-hintstyle`](https://docs.gtk.org/gtk4/property.Settings.gtk-xft-hintstyle.html) |
+| `Xft/Hinting` | integer | text hinting | `0`=no, `1`=yes, `-1`=default | [`gtk-xft-hinting`](https://docs.gtk.org/gtk4/property.Settings.gtk-xft-hinting.html) |
+| `Xft/RGBA` | string | text subpixel rendering | `none`, `rgb`, `bgr`, `vrgb`, `vbgr` | [`gtk-xft-rgba`](https://docs.gtk.org/gtk4/property.Settings.gtk-xft-rgba.html) |
+| `Gtk/CursorThemeName` | string | cursor theme (see also [#23](https://github.com/derat/xsettingsd/issues/23)) | e.g. subdirectories of `/usr/share/icons` | [`gtk-cursor-theme-name`](https://docs.gtk.org/gtk4/property.Settings.gtk-cursor-theme-name.html) |
+| `Gtk/DecorationLayout` | string | layout of gtk titlebar buttons | `:`=no titlebar buttons, `:minimize,maximize,close`=buttons right, see gtk documentation -> | [`gtk-decoration-layout`](https://docs.gtk.org/gtk4/property.Settings.gtk-decoration-layout.html)
 
 <https://www.freedesktop.org/wiki/Specifications/XSettingsRegistry/> also lists
 standardized settings.
