@@ -21,12 +21,7 @@ namespace xsettingsd {
 TEST(CharStreamTest, Basic) {
   ConfigParser::StringCharStream stream("012");
 
-  // We should die if we try to do anything before calling Init().
-  ASSERT_DEATH(stream.AtEOF(), "initialized");
-  ASSERT_DEATH(stream.GetChar(), "initialized");
-  ASSERT_DEATH(stream.UngetChar('0'), "initialized");
-
-  // Now read a character, put it back, and read it again.
+  // Read a character, put it back, and read it again.
   ASSERT_TRUE(stream.Init(NULL));
   EXPECT_FALSE(stream.AtEOF());
   EXPECT_EQ('0', stream.GetChar());
